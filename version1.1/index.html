@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Aura</title>
+    <link rel="stylesheet" href="style.css?v=13">
+    <!-- Google Fonts: Inter and Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Boxicons for icons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        
+        <!-- Menú Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <img src="logo.jpg" alt="Logo L1deres" class="sidebar-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="logo-fallback" style="display: none;">
+                        <i class='bx bx-image-alt'></i>
+                        <span>Logo</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-btn active">
+                    <i class='bx bx-grid-alt'></i>
+                    <span>Panel Principal</span>
+                </button>
+                <button class="nav-btn">
+                    <i class='bx bx-map-alt'></i>
+                    <span>Planos</span>
+                </button>
+                <button class="nav-btn">
+                    <i class='bx bx-car'></i>
+                    <span>Vehículos</span>
+                </button>
+                <button class="nav-btn">
+                    <i class='bx bx-line-chart'></i>
+                    <span>Métricas</span>
+                </button>
+                <button class="nav-btn" id="btn-config">
+                    <i class='bx bx-cog'></i>
+                    <span>Configuración</span>
+                </button>
+                <button class="nav-btn">
+                    <i class='bx bx-help-circle'></i>
+                    <span>Ayuda</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>&copy; 2026 Aura. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Área Principal (Paño Limpio) -->
+        <main class="main-content" id="dashboard-view">
+            <div class="controls-header">
+                <div id="status-board" class="status-board-top">
+                    <div class="status-info">
+                        <div class="status-title">Demora Estimada</div>
+                        <div class="status-time" id="status-time">00:00</div>
+                    </div>
+                    <div class="status-badge badge-libre" id="status-badge">Sin Demora</div>
+                </div>
+
+                <div class="header-buttons">
+                    <button id="btn-ingresar-lavado" style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s;">
+                        <i class='bx bx-car'></i> Ingresar Solo Lavado
+                    </button>
+                    <button id="btn-ingresar-secado" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s;">
+                        <i class='bx bx-car'></i> Ingresar Solo Interior
+                    </button>
+                    <button id="btn-ingresar-completo" style="padding: 10px 20px; background: #f59e0b; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s;">
+                        <i class='bx bx-car'></i> Ingresar Lavado + Interior
+                    </button>
+                </div>
+            </div>
+            <div class="canvas-area" id="canvas-area">
+                <!-- Scalextric Tracks -->
+                <svg width="100%" height="100%" class="scalextric-svg" style="position:absolute; top:0; left:0; z-index:0; pointer-events:none;">
+                    <defs>
+                        <linearGradient id="neonAzulAmarillo" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#38bdf8" />
+                            <stop offset="100%" stop-color="#fde047" />
+                        </linearGradient>
+                        <linearGradient id="neonMarronVioleta" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#d97706" />
+                            <stop offset="100%" stop-color="#8b5cf6" />
+                        </linearGradient>
+                        <filter id="glowAzul">
+                            <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                        <filter id="glowVioleta">
+                            <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Base Asfalto Interior -->
+                    <path id="base-interior" d="" fill="none" class="track-base" />
+                    <!-- Rieles metálicos y slot Interior (Scalextric) -->
+                    <path id="rails-interior" d="" fill="none" stroke="#9ca3af" stroke-width="16" />
+                    <path id="slot-interior" d="" fill="none" stroke="#111" stroke-width="6" />
+                    
+                    <!-- Pista Interior (Marron/Violeta) -->
+                    <path id="track-interior" d="" 
+                          fill="none" stroke="url(#neonMarronVioleta)" stroke-width="8" 
+                          filter="url(#glowVioleta)" class="track-line" style="opacity: 0.6;"/>
+                          
+                    <!-- Base Asfalto Lavado -->
+                    <path id="base-lavado" d="" fill="none" class="track-base" />
+                    <!-- Rieles metálicos y slot Lavado (Scalextric) -->
+                    <path id="rails-lavado" d="" fill="none" stroke="#9ca3af" stroke-width="16" />
+                    <path id="slot-lavado" d="" fill="none" stroke="#111" stroke-width="6" />
+
+                    <!-- Pista Lavado (Azul/Amarillo) -->
+                    <path id="track-lavado" d="" 
+                          fill="none" stroke="url(#neonAzulAmarillo)" stroke-width="8" 
+                          filter="url(#glowAzul)" class="track-line" style="opacity: 0.6;"/>
+                </svg>
+                <!-- Aquí se generan los 48 boxes (8x6) -->
+                <div class="canvas-grid" id="canvas-grid" style="position:relative; z-index:1;">
+                    <!-- Los boxes se agregarán con Javascript -->
+                </div>
+            </div>
+        </main>
+        
+        <!-- Vista de Métricas -->
+        <main class="main-content" id="metrics-view" style="display: none;">
+            <div class="metrics-header">
+                <h2>Panel de Métricas y Estadísticas</h2>
+            </div>
+            
+            <div class="metrics-cards">
+                <div class="metric-card">
+                    <div class="metric-title">Lavados Totales</div>
+                    <div class="metric-value" id="metric-total-lavados">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Recaudación Total</div>
+                    <div class="metric-value" id="metric-total-revenue">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Costo Insumos</div>
+                    <div class="metric-value" id="metric-total-cost">$0</div>
+                </div>
+                <div class="metric-card highlight">
+                    <div class="metric-title">Ganancia Neta</div>
+                    <div class="metric-value" id="metric-net-profit">$0</div>
+                </div>
+            </div>
+            
+            <div class="metrics-filters">
+                <label>Desde: <input type="date" id="filter-date-from"></label>
+                <label>Hasta: <input type="date" id="filter-date-to"></label>
+                <label>Servicio: 
+                    <select id="filter-service">
+                        <option value="all">Todos</option>
+                        <option value="solo_lavado">Solo Lavado</option>
+                        <option value="solo_secado">Solo Interior</option>
+                        <option value="lavado_secado">Lavado + Interior</option>
+                    </select>
+                </label>
+                <button class="btn btn-primary" id="btn-apply-filters">Filtrar</button>
+                <button class="btn btn-danger" id="btn-clear-history" style="margin-left: auto; background: #ef4444; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer;">Borrar Historial</button>
+            </div>
+            
+            <div class="metrics-table-container">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha y Hora</th>
+                            <th>Servicio</th>
+                            <th>Recaudación</th>
+                            <th>Insumos</th>
+                            <th>Ganancia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metrics-table-body">
+                        <!-- Filas de datos -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Configuración -->
+    <div id="config-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class='bx bx-cog'></i> Configuración de Tiempos</h2>
+                <button class="close-btn" id="close-config">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h3 class="section-title"><i class='bx bx-time'></i> Tiempos de Servicio</h3>
+                    <div class="form-group">
+                        <label>Tiempo de Lavado:</label>
+                        <div class="time-inputs">
+                            <input type="number" id="lavado-min" min="0" max="60" value="0">
+                            <span>min</span>
+                            <input type="number" id="lavado-sec" min="0" max="59" value="5">
+                            <span>seg</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tiempo de Interior:</label>
+                        <div class="time-inputs">
+                            <input type="number" id="secado-min" min="0" max="60" value="0">
+                            <span>min</span>
+                            <input type="number" id="secado-sec" min="0" max="59" value="5">
+                            <span>seg</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                
+                <div class="modal-section">
+                    <h3 class="section-title"><i class='bx bx-dollar-circle'></i> Precios</h3>
+                    <div class="form-group">
+                        <label>Precio Solo Lavado ($):</label>
+                        <input type="number" id="precio-lavado" min="0" value="0" class="price-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Solo Interior ($):</label>
+                        <input type="number" id="precio-secado" min="0" value="0" class="price-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Lavado + Interior ($):</label>
+                        <input type="number" id="precio-completo" min="0" value="0" class="price-input">
+                    </div>
+                </div>
+                <div class="modal-section" style="margin-top: 15px;">
+                    <h3 class="section-title"><i class='bx bx-purchase-tag'></i> Costo de Insumos (% del precio)</h3>
+                    <div class="form-group">
+                        <label>Insumos Lavado (%):</label>
+                        <input type="number" id="costo-lavado" min="0" max="100" value="0" class="price-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Insumos Interior (%):</label>
+                        <input type="number" id="costo-secado" min="0" max="100" value="0" class="price-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Insumos Lavado + Interior (%):</label>
+                        <input type="number" id="costo-completo" min="0" max="100" value="0" class="price-input">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="save-config">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=13"></script>
+</body>
+</html>
