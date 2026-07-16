@@ -982,8 +982,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Calcular Totales
         let tLavados = filtered.length;
-        let tRev = filtered.reduce((acc, curr) => acc + curr.revenue, 0);
-        let tProfit = filtered.reduce((acc, curr) => acc + curr.profit, 0);
+        let tRev = filtered.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+        let tProfit = filtered.reduce((acc, curr) => acc + (Number(curr.profit) || 0), 0);
         
         document.getElementById('metric-total-lavados').textContent = tLavados;
         document.getElementById('metric-total-revenue').textContent = '$' + tRev.toFixed(2);
@@ -1000,13 +1000,16 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (rec.tipo === 'solo_secado') srvName = 'Solo Interior';
             else srvName = 'Lavado + Interior';
             
+            const revNum = Number(rec.revenue) || 0;
+            const profNum = Number(rec.profit) || 0;
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="font-weight: bold; color: var(--primary-color);">${rec.patente || 'S/D'}</td>
                 <td>${dateStr}</td>
                 <td>${srvName}</td>
-                <td style="color: #60a5fa;">$${rec.revenue.toFixed(2)}</td>
-                <td style="color: #4ade80; font-weight: bold;">$${rec.profit.toFixed(2)}</td>
+                <td style="color: #60a5fa;">$${revNum.toFixed(2)}</td>
+                <td style="color: #4ade80; font-weight: bold;">$${profNum.toFixed(2)}</td>
             `;
             tbody.appendChild(tr);
         });
