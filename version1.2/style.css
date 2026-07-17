@@ -83,7 +83,7 @@ body {
 .controls-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: stretch; /* Asegura que todo mida lo mismo de alto */
     gap: 15px;
     padding: 15px 20px;
     background-color: var(--card-bg);
@@ -93,7 +93,85 @@ body {
 .header-buttons {
     display: flex;
     gap: 15px;
+    align-items: stretch; /* Estira los botones para igualar el alto del status-board */
 }
+
+/* Botones de acción parejos */
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-weight: 800;
+    color: white;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-size: 0.85rem;
+    min-width: 140px;
+    
+    /* F1 Style */
+    transform: skewX(-12deg); /* Inclinación de velocidad */
+    border-radius: 4px; /* Bordes más afilados */
+    border-right: 4px solid rgba(255,255,255,0.8); /* Racing stripe derecha */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Des-inclinar el contenido interno para que no se deforme */
+.action-btn i, .action-btn span {
+    transform: skewX(12deg);
+    position: relative;
+    z-index: 2;
+}
+
+.action-btn i {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+}
+
+.action-btn span {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Montserrat', sans-serif;
+    font-style: italic; /* Dinamismo */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.action-btn:hover {
+    transform: skewX(-12deg) scale(1.05);
+}
+
+/* Patrón de líneas diagonales de carreras (racing stripes) combinado con el gradiente */
+.btn-blue {
+    background: 
+        repeating-linear-gradient(45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 4px, transparent 4px, transparent 8px),
+        linear-gradient(145deg, #0ea5e9, #0284c7);
+    box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);
+    border-left: 2px solid #38bdf8;
+}
+.btn-blue:hover { box-shadow: 0 0 20px rgba(14, 165, 233, 0.8); }
+
+.btn-green {
+    background: 
+        repeating-linear-gradient(45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 4px, transparent 4px, transparent 8px),
+        linear-gradient(145deg, #10b981, #059669);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+    border-left: 2px solid #34d399;
+}
+.btn-green:hover { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
+
+.btn-orange {
+    background: 
+        repeating-linear-gradient(45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 4px, transparent 4px, transparent 8px),
+        linear-gradient(145deg, #f59e0b, #d97706);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+    border-left: 2px solid #fbbf24;
+}
+.btn-orange:hover { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
 
 .logo-fallback i {
     font-size: 1.5rem;
@@ -141,6 +219,31 @@ body {
     font-weight: 600;
 }
 
+.submenu {
+    display: none;
+    flex-direction: column;
+    padding-left: 36px;
+    margin-top: 4px;
+}
+
+.submenu.show {
+    display: flex;
+}
+
+.submenu-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+}
+
+.dropdown-arrow {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+
+.dropdown-arrow.open {
+    transform: rotate(180deg);
+}
+
 .sidebar-footer {
     padding: 24px;
     border-top: 1px solid var(--border-color);
@@ -162,11 +265,11 @@ body {
 .canvas-area {
     flex: 1;
     min-height: max-content;
-    background-color: #111;
-    /* Patrón de bandera a cuadros oscuro tipo carreras / scalextric */
+    background-color: #050a05;
+    /* Pasto o textura base del circuito */
     background-image: 
-      repeating-linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
-      repeating-linear-gradient(45deg, #1a1a1a 25%, #111 25%, #111 75%, #1a1a1a 75%, #1a1a1a);
+        repeating-linear-gradient(45deg, rgba(10, 20, 10, 0.4) 25%, transparent 25%, transparent 75%, rgba(10, 20, 10, 0.4) 75%, rgba(10, 20, 10, 0.4)),
+        repeating-linear-gradient(45deg, rgba(10, 20, 10, 0.4) 25%, #050a05 25%, #050a05 75%, rgba(10, 20, 10, 0.4) 75%, rgba(10, 20, 10, 0.4));
     background-position: 0 0, 30px 30px;
     background-size: 60px 60px;
     border-radius: 16px;
@@ -179,22 +282,26 @@ body {
     justify-content: center;
 }
 
-.track-base {
-    stroke-width: 110px; /* Ancho ajustado para un carril (dos carriles juntos forman 220px) */
-    stroke: #4b4b4b; /* Gris plástico Scalextric */
-    stroke-linecap: round; /* Bordes suaves */
-    stroke-linejoin: round;
-    /* Se elimina el stroke-dasharray porque causaba roturas y cortes geométricos severos en las curvas */
+.track-line {
+    stroke-dasharray: 30 15;
+    animation: trackFlow 1.5s linear infinite;
 }
+@keyframes trackFlow {
+    from { stroke-dashoffset: 45; }
+    to { stroke-dashoffset: 0; }
+}
+
+/* --- PISTA F1 MATEMÁTICAMENTE PERFECTA --- */
 
 .canvas-grid {
     display: grid;
     /* 6 columnas de 3.6cm */
     grid-template-columns: repeat(6, 3.6cm);
-    /* 1 fila para titulos de 40px, luego 8 filas de 2.4cm */
-    grid-template-rows: 40px repeat(8, 2.4cm);
-    justify-content: space-evenly;
-    align-content: space-evenly;
+    /* 1 fila para titulos de 40px, luego 8 filas de 3.6cm */
+    grid-template-rows: 40px repeat(8, 3.6cm);
+    justify-content: center;
+    align-content: center;
+    gap: 0;
     width: 100%;
     padding: 1rem;
 }
@@ -209,40 +316,43 @@ body {
     font-size: 0.95rem;
     letter-spacing: 1.5px;
     color: #fff;
-    text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color), 0 1px 3px rgba(0,0,0,0.9);
     border-bottom: 3px solid var(--primary-color);
     margin-bottom: 8px;
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(5, 10, 25, 0.5);
+    backdrop-filter: blur(3px);
     border-radius: 8px 8px 0 0;
     padding: 6px;
 }
 
 .grid-box {
     width: 3.6cm;
-    height: 2.4cm;
-    border: 2px dashed rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    background-color: rgba(0, 0, 0, 0.6);
+    height: 3.6cm;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    /* Glassmorphism real — se ve el asfalto a través del box */
+    background: linear-gradient(145deg, rgba(20, 30, 50, 0.25), rgba(10, 15, 30, 0.35));
     backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     display: flex;
     justify-content: center;
     align-items: center;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.75);
     font-size: 0.8rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
-    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .grid-box:hover {
-    border: 2px solid var(--primary-color);
-    background-color: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.6);
+    background: linear-gradient(145deg, rgba(14, 165, 233, 0.15), rgba(2, 6, 23, 0.9));
     color: #fff;
-    text-shadow: 0 0 5px var(--primary-color);
-    transform: scale(1.05);
+    text-shadow: 0 0 8px var(--primary-color);
+    transform: translateY(-2px) scale(1.02);
     z-index: 2;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.2);
 }
 
 /* Tablero de Estado (Status Board Top) */
@@ -297,25 +407,7 @@ body {
 .badge-alta { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; text-shadow: 0 0 5px #f59e0b; }
 .badge-critica { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; text-shadow: 0 0 5px #ef4444; }
 
-.reserva-online {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgba(0, 0, 0, 0.7);
-    border: 2px dashed var(--accent-color);
-    border-radius: 8px;
-    
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 800;
-    text-transform: uppercase;
-    font-size: 0.95rem;
-    letter-spacing: 1.5px;
-    color: #fff;
-    text-shadow: 0 0 10px var(--accent-color);
-    
-    text-align: center;
-    box-shadow: inset 0 0 15px rgba(245, 158, 11, 0.2), 0 0 10px rgba(245, 158, 11, 0.3);
-}
+
 
 /* Auto Image Styling */
 .car-wrapper {
@@ -513,26 +605,47 @@ body {
 .car-wrapper.solo-secado .car-timer { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
 .car-wrapper.completo .car-timer { background: #f97316; box-shadow: 0 0 10px #f97316; }
 
+.car-plate {
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #fff;
+    color: #111;
+    font-size: 0.55rem;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 2px;
+    border: 1px solid #333;
+    border-top: 3px solid #0033a0; /* Franja azul Mercosur */
+    white-space: nowrap;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    z-index: 10;
+    pointer-events: none;
+}
+
 .box-occupied-lavado {
     border: 2px solid #0ea5e9;
-    background-color: rgba(14, 165, 233, 0.15);
-    box-shadow: 0 0 15px rgba(14, 165, 233, 0.6), inset 0 0 20px rgba(14, 165, 233, 0.3);
+    background: linear-gradient(145deg, rgba(14, 165, 233, 0.35), rgba(2, 6, 23, 0.35));
+    box-shadow: 0 0 18px rgba(14, 165, 233, 0.7), inset 0 0 15px rgba(14, 165, 233, 0.2);
     color: #fff;
     text-shadow: 0 0 5px #0ea5e9;
 }
 
 .box-occupied-secado {
     border: 2px solid #10b981;
-    background-color: rgba(16, 185, 129, 0.15);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.35), rgba(2, 6, 23, 0.35));
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.7), inset 0 0 15px rgba(16, 185, 129, 0.2);
     color: #fff;
     text-shadow: 0 0 5px #10b981;
 }
 
 .box-occupied-completo {
     border: 2px solid #f59e0b;
-    background-color: rgba(245, 158, 11, 0.15);
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.6), inset 0 0 20px rgba(245, 158, 11, 0.3);
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.35), rgba(2, 6, 23, 0.35));
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.7), inset 0 0 15px rgba(245, 158, 11, 0.2);
     color: #fff;
     text-shadow: 0 0 5px #f59e0b;
 }

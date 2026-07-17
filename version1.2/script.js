@@ -1,14 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // === SUPABASE INIT ===
+    const SUPABASE_URL = 'https://ojalzcfjrlkkyyqvihvc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_lkMNUGG8ML6nv5yMwezq1Q_bC7_xabQ';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     // === CONFIGURACIÓN GLOBAL ===
     window.APP_CONFIG = {
         tiempoLavado: parseInt(localStorage.getItem('tiempoLavado')) || 5000,
         tiempoSecado: parseInt(localStorage.getItem('tiempoSecado')) || 5000,
         precioLavado: parseInt(localStorage.getItem('precioLavado')) || 0,
         precioSecado: parseInt(localStorage.getItem('precioSecado')) || 0,
-        precioCompleto: parseInt(localStorage.getItem('precioCompleto')) || 0,
-        costoLavado: parseInt(localStorage.getItem('costoLavado')) || 0,
-        costoSecado: parseInt(localStorage.getItem('costoSecado')) || 0,
-        costoCompleto: parseInt(localStorage.getItem('costoCompleto')) || 0
+        precioCompleto: parseInt(localStorage.getItem('precioCompleto')) || 0
     };
 
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -58,10 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const precioLavadoInput = document.getElementById('precio-lavado');
     const precioSecadoInput = document.getElementById('precio-secado');
     const precioCompletoInput = document.getElementById('precio-completo');
-    
-    const costoLavadoInput = document.getElementById('costo-lavado');
-    const costoSecadoInput = document.getElementById('costo-secado');
-    const costoCompletoInput = document.getElementById('costo-completo');
 
     if (btnConfig && modalConfig) {
         btnConfig.addEventListener('click', () => {
@@ -76,10 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
             precioLavadoInput.value = window.APP_CONFIG.precioLavado;
             precioSecadoInput.value = window.APP_CONFIG.precioSecado;
             precioCompletoInput.value = window.APP_CONFIG.precioCompleto;
-            
-            costoLavadoInput.value = window.APP_CONFIG.costoLavado;
-            costoSecadoInput.value = window.APP_CONFIG.costoSecado;
-            costoCompletoInput.value = window.APP_CONFIG.costoCompleto;
 
             modalConfig.classList.add('show');
         });
@@ -98,19 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.APP_CONFIG.precioLavado = parseInt(precioLavadoInput.value) || 0;
             window.APP_CONFIG.precioSecado = parseInt(precioSecadoInput.value) || 0;
             window.APP_CONFIG.precioCompleto = parseInt(precioCompletoInput.value) || 0;
-            
-            window.APP_CONFIG.costoLavado = parseInt(costoLavadoInput.value) || 0;
-            window.APP_CONFIG.costoSecado = parseInt(costoSecadoInput.value) || 0;
-            window.APP_CONFIG.costoCompleto = parseInt(costoCompletoInput.value) || 0;
 
             localStorage.setItem('tiempoLavado', window.APP_CONFIG.tiempoLavado);
             localStorage.setItem('tiempoSecado', window.APP_CONFIG.tiempoSecado);
             localStorage.setItem('precioLavado', window.APP_CONFIG.precioLavado);
             localStorage.setItem('precioSecado', window.APP_CONFIG.precioSecado);
             localStorage.setItem('precioCompleto', window.APP_CONFIG.precioCompleto);
-            localStorage.setItem('costoLavado', window.APP_CONFIG.costoLavado);
-            localStorage.setItem('costoSecado', window.APP_CONFIG.costoSecado);
-            localStorage.setItem('costoCompleto', window.APP_CONFIG.costoCompleto);
             modalConfig.classList.remove('show');
         });
     }
@@ -155,18 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = Math.floor(i / 6) + 2; 
             const col = (i % 6) + 1;
 
-            if (boxNumber === 35 || boxNumber === 36) {
-                // Al llegar al 35, creamos la zona que ocupa el lugar del 35 y 36 (Fila 7)
-                if (boxNumber === 35) {
-                    const reserva = document.createElement('div');
-                    reserva.className = 'reserva-online';
-                    reserva.textContent = 'Zona Reserva Online';
-                    reserva.style.gridRow = row;
-                    reserva.style.gridColumn = '5 / span 2';
-                    canvasGrid.appendChild(reserva);
-                }
-                continue; // Saltamos la creación del grid-box normal
-            }
+
 
             const box = document.createElement('div');
             box.className = 'grid-box';
@@ -191,7 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Ubicación explícita: fila 2 en adelante para dejar la fila 1 para títulos
                 box.style.gridRow = row;
-                box.style.gridColumn = col;
+                
+                // Centrar autos de "Terminado" en la pista ensanchada
+                if ([25, 19, 13, 7].includes(boxNumber)) {
+                    box.style.gridColumn = '1 / span 2';
+                    box.style.justifySelf = 'center';
+                } else {
+                    box.style.gridColumn = col;
+                }
 
                 canvasGrid.appendChild(box);
             }
@@ -345,12 +328,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 timer = document.createElement('div');
                 timer.className = 'car-timer';
                 
+                let plate = document.createElement('div');
+                plate.className = 'car-plate';
+                plate.textContent = autoObj.patente;
+                
                 wrapper.appendChild(icon);
+                wrapper.appendChild(plate);
                 wrapper.appendChild(timer);
                 canvas.appendChild(wrapper);
             } else {
                 icon = wrapper.querySelector('.auto-icon');
                 timer = wrapper.querySelector('.car-timer');
+                let plate = wrapper.querySelector('.car-plate');
+                if (plate) plate.textContent = autoObj.patente;
             }
             
             // Calculamos posición destino exacta usando el DOM real
@@ -500,8 +490,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let freeIdx = targetIndices.find(idx => estadoEspera[idx] === null);
         
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const getL = () => letters[Math.floor(Math.random() * 26)];
+        const num = Math.floor(100 + Math.random() * 900).toString().padStart(3, '0');
+        let randomPatente = '';
+        if (Math.random() > 0.5) {
+            randomPatente = `${getL()}${getL()} ${num} ${getL()}${getL()}`; // Nuevo formato Mercosur
+        } else {
+            randomPatente = `${getL()}${getL()}${getL()} ${num}`; // Viejo formato
+        }
+
         if (freeIdx !== undefined) {
-            estadoEspera[freeIdx] = { id: autoIdCounter++, tipo: tipo, startTime: Date.now() };
+            estadoEspera[freeIdx] = { id: autoIdCounter++, patente: randomPatente, tipo: tipo, startTime: Date.now() };
             if (advanceQueue()) {} // Las físicas los empujan hacia adelante dentro de su carril
             updateVisuals();
             checkMovement();
@@ -906,27 +906,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.recordMetric = function(auto) {
         let rev = 0;
-        let costPerc = 0;
-        if (auto.tipo === 'solo_lavado') { rev = window.APP_CONFIG.precioLavado; costPerc = window.APP_CONFIG.costoLavado; }
-        else if (auto.tipo === 'solo_secado') { rev = window.APP_CONFIG.precioSecado; costPerc = window.APP_CONFIG.costoSecado; }
-        else { rev = window.APP_CONFIG.precioCompleto; costPerc = window.APP_CONFIG.costoCompleto; }
+        if (auto.tipo === 'solo_lavado') { rev = window.APP_CONFIG.precioLavado; }
+        else if (auto.tipo === 'solo_secado') { rev = window.APP_CONFIG.precioSecado; }
+        else { rev = window.APP_CONFIG.precioCompleto; }
         
-        let cost = (rev * costPerc) / 100; // Porcentaje
-        
-        metricsHistory.push({
+        const metricData = {
             id: Date.now() + Math.random(),
+            patente: auto.patente || 'S/D',
             timestamp: Date.now(),
             tipo: auto.tipo,
             revenue: rev,
-            cost: cost,
-            profit: rev - cost
-        });
+            profit: rev // La ganancia ahora es el 100% de la recaudación
+        };
+
+        metricsHistory.push(metricData);
         localStorage.setItem('metricsHistory', JSON.stringify(metricsHistory));
         
         const metricsView = document.getElementById('metrics-view');
         if (metricsView && metricsView.style.display === 'block') {
             window.updateMetricsUI();
         }
+
+        // --- SUPABASE BACKEND INTEGRATION ---
+        const fechaStr = new Date(metricData.timestamp).toLocaleString();
+        let srvName = '';
+        if(metricData.tipo === 'solo_lavado') srvName = 'Solo Lavado';
+        else if (metricData.tipo === 'solo_secado') srvName = 'Solo Interior';
+        else srvName = 'Lavado + Interior';
+
+        const insertToSupabase = async () => {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('metricas')
+                    .insert([
+                        { 
+                            patente: metricData.patente, 
+                            fecha: fechaStr, 
+                            servicio: srvName, 
+                            recaudacion: metricData.revenue, 
+                            ganancia: metricData.profit 
+                        }
+                    ]);
+                
+                if (error) throw error;
+                console.log("Datos sincronizados con Supabase correctamente:", metricData.patente);
+            } catch (error) {
+                console.error("Error al enviar datos a Supabase:", error);
+            }
+        };
+        
+        insertToSupabase();
     };
 
     window.updateMetricsUI = function() {
@@ -959,13 +988,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Calcular Totales
         let tLavados = filtered.length;
-        let tRev = filtered.reduce((acc, curr) => acc + curr.revenue, 0);
-        let tCost = filtered.reduce((acc, curr) => acc + curr.cost, 0);
-        let tProfit = filtered.reduce((acc, curr) => acc + curr.profit, 0);
+        let tRev = filtered.reduce((acc, curr) => acc + (Number(curr.revenue) || 0), 0);
+        let tProfit = filtered.reduce((acc, curr) => acc + (Number(curr.profit) || 0), 0);
         
         document.getElementById('metric-total-lavados').textContent = tLavados;
         document.getElementById('metric-total-revenue').textContent = '$' + tRev.toFixed(2);
-        document.getElementById('metric-total-cost').textContent = '$' + tCost.toFixed(2);
         document.getElementById('metric-net-profit').textContent = '$' + tProfit.toFixed(2);
         
         // Poblar Tabla
@@ -979,13 +1006,16 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (rec.tipo === 'solo_secado') srvName = 'Solo Interior';
             else srvName = 'Lavado + Interior';
             
+            const revNum = Number(rec.revenue) || 0;
+            const profNum = Number(rec.profit) || 0;
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td style="font-weight: bold; color: var(--primary-color);">${rec.patente || 'S/D'}</td>
                 <td>${dateStr}</td>
                 <td>${srvName}</td>
-                <td style="color: #60a5fa;">$${rec.revenue.toFixed(2)}</td>
-                <td style="color: #f87171;">-$${rec.cost.toFixed(2)}</td>
-                <td style="color: #4ade80; font-weight: bold;">$${rec.profit.toFixed(2)}</td>
+                <td style="color: #60a5fa;">$${revNum.toFixed(2)}</td>
+                <td style="color: #4ade80; font-weight: bold;">$${profNum.toFixed(2)}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -1010,4 +1040,74 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    // Dibujar la pista Neón dinámicamente
+    function drawScalextricPaths() {
+        const trackInterior = document.getElementById('track-interior');
+        const trackLavado = document.getElementById('track-lavado');
+        const canvasArea = document.getElementById('canvas-grid'); // El SVG ahora está dentro de canvas-grid
+        
+        if (!trackInterior || !trackLavado || !canvasArea) return;
+
+        // Función auxiliar para obtener el centro de un box por su boxNumber (1-48)
+        function getBoxCenter(boxNumber) {
+            const box = document.querySelector(`.grid-box[data-box-number="${boxNumber}"]`);
+            if (!box) return { x: 0, y: 0 };
+            // Al estar el SVG dentro de canvasGrid, las coordenadas relativas son:
+            return {
+                x: box.offsetLeft + (box.offsetWidth / 2),
+                y: box.offsetTop + (box.offsetHeight / 2)
+            };
+        }
+
+        // Pista Solo Interior (Circuito Interno)
+        // Espera Izq: 29 (bot) -> 11 (top). Secado 2: 9. Terminado: 7 (top) -> 25 (bot).
+        const eIzqBot = getBoxCenter(29);
+        const eIzqTop = getBoxCenter(11);
+        const secado2 = getBoxCenter(9);
+        
+        // Pista Lavado (Circuito Externo)
+        // Espera Der: 30 (bot) -> 12 (top). Lavado: 4. Secado 1: 3. Terminado: 7 (top) -> 25 (bot).
+        const eDerBot = getBoxCenter(30);
+        const eDerTop = getBoxCenter(12);
+        const lavado = getBoxCenter(4);
+        const secado1 = getBoxCenter(3);
+        
+        // Terminado (carril compartido)
+        const tTop = getBoxCenter(7);
+        const tBot = getBoxCenter(25);
+
+        if (eIzqBot.x === 0 || eDerBot.x === 0 || tTop.x === 0) return; // Si aún no se renderizaron
+
+        let R = 45; // Radio de curva para las esquinas
+
+        // Path Interno (Interior) - Dobla en la Fila 3
+        let pathIzq = `
+            M ${eIzqBot.x} ${eIzqBot.y + 100} 
+            L ${eIzqTop.x} ${eIzqTop.y + R} 
+            Q ${eIzqTop.x} ${eIzqTop.y} ${eIzqTop.x - R} ${eIzqTop.y}
+            L ${tTop.x + R} ${tTop.y}
+            Q ${tTop.x} ${tTop.y} ${tTop.x} ${tTop.y + R}
+            L ${tBot.x} ${tBot.y + 100}
+        `;
+
+        // Path Externo (Lavado) - Sube hasta la Fila 2 y luego dobla
+        let pathDer = `
+            M ${eDerBot.x} ${eDerBot.y + 100} 
+            L ${eDerTop.x} ${lavado.y + R} 
+            Q ${eDerTop.x} ${lavado.y} ${eDerTop.x - R} ${lavado.y}
+            L ${tTop.x + R} ${lavado.y}
+            Q ${tTop.x} ${lavado.y} ${tTop.x} ${lavado.y + R}
+            L ${tBot.x} ${tBot.y + 100}
+        `;
+
+        trackInterior.setAttribute('d', pathIzq);
+        trackLavado.setAttribute('d', pathDer);
+    }
+
+    // Dibujar pistas constantemente para asegurar que se adapten a cualquier cambio (y que el DOM esté cargado)
+    setInterval(drawScalextricPaths, 500);
+    window.addEventListener('resize', drawScalextricPaths);
+    // Llamada inicial para intentar renderizar rápido
+    setTimeout(drawScalextricPaths, 100);
+
 });
