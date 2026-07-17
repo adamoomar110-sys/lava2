@@ -610,10 +610,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function ingresarAuto(tipo) {
         let targetIndices = [];
+        let errorMsg = '';
         if (tipo === 'solo_secado') {
             targetIndices = [0, 2, 4, 6]; // Carril Izquierdo
+            errorMsg = 'Límite de 4 autos de Secado alcanzado.';
         } else {
-            targetIndices = [0, 1, 2, 3, 4, 5, 6, 7]; // Cualquier carril
+            targetIndices = [1, 3, 5, 7]; // Carril Derecho (Lavado)
+            errorMsg = 'Límite de 4 autos de Lavado alcanzado.';
         }
         
         let freeIdx = targetIndices.find(idx => estadoEspera[idx] === null);
@@ -638,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
             checkMovement();
             syncStateToSupabase();
         } else {
-            alert('El carril correspondiente está lleno.');
+            alert(errorMsg);
         }
     }
 
