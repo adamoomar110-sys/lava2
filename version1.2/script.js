@@ -6,12 +6,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === CONFIGURACIÓN GLOBAL ===
     window.APP_CONFIG = {
-        tiempoLavado: parseInt(localStorage.getItem('tiempoLavado')) || 5000,
-        tiempoSecado: parseInt(localStorage.getItem('tiempoSecado')) || 5000,
-        precioLavado: parseInt(localStorage.getItem('precioLavado')) || 0,
-        precioSecado: parseInt(localStorage.getItem('precioSecado')) || 0,
-        precioCompleto: parseInt(localStorage.getItem('precioCompleto')) || 0
+        tiempoLavado: 5000,
+        tiempoSecado: 5000,
+        precioLavado: 0,
+        precioSecado: 0,
+        precioCompleto: 0
     };
+
+    // Cargar desde Supabase
+    async function loadConfig() {
+        try {
+            const { data, error } = await supabaseClient.from('config').select('*').eq('id', 1).single();
+            if (data && !error) {
+                window.APP_CONFIG.tiempoLavado = parseInt(data.tiempoLavado) || 5000;
+                window.APP_CONFIG.tiempoSecado = parseInt(data.tiempoSecado) || 5000;
+                window.APP_CONFIG.precioLavado = parseInt(data.precioLavado) || 0;
+                window.APP_CONFIG.precioSecado = parseInt(data.precioSecado) || 0;
+                window.APP_CONFIG.precioCompleto = parseInt(data.precioCompleto) || 0;
+            }
+        } catch(e) { console.error("Error al cargar config", e); }
+    }
+    loadConfig();
 
     const navButtons = document.querySelectorAll('.nav-btn');
     
@@ -194,9 +209,95 @@ document.addEventListener('DOMContentLoaded', () => {
     let estadoTerminado = [null, null, null, null]; // 4 lugares 
     
     let activeAutos = {};
-    let autoIdCounter = 1;
+    // Func para generar UUID
+    function uuidv4() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    const myClientId = uuidv4();
+    let isMaster = false;
+    let lastStateString = "";
+
     let isMoving = false; // Flag para evitar overlap de animaciones
     let timers = {}; // guardamos timers para no superponerlos si hay clicks manuales
+
+    // Master Ping & State initialization
+    async function initRealtime() {
+        // Initial fetch
+        const { data, error } = await supabaseClient.from('live_state').select('state_data').eq('id', 1).single();
+        if (data && data.state_data) {
+            const state = data.state_data;
+            estadoEspera = state.estadoEspera || new Array(8).fill(null);
+            estadoLavado = state.estadoLavado || null;
+            estadoSecado = state.estadoSecado || [null, null];
+            estadoTerminado = state.estadoTerminado || [null, null, null, null];
+            activeAutos = state.activeAutos || {};
+            updateVisuals();
+        } else if (error && error.code === 'PGRST116') {
+            // No existe la fila, creémosla.
+            const initialState = {
+                master_id: myClientId,
+                last_ping: Date.now(),
+                estadoEspera: new Array(8).fill(null),
+                estadoLavado: null,
+                estadoSecado: [null, null],
+                estadoTerminado: [null, null, null, null],
+                activeAutos: {}
+            };
+            isMaster = true;
+            await supabaseClient.from('live_state').insert({ id: 1, state_data: initialState, last_updated: Date.now() });
+        }
+
+        // Ping loop
+        setInterval(async () => {
+            try {
+                const { data, error } = await supabaseClient.from('live_state').select('state_data').eq('id', 1).single();
+                const now = Date.now();
+                if (data && data.state_data) {
+                    const state = data.state_data;
+                    if (!state.master_id || now - state.last_ping > 15000) {
+                        isMaster = true;
+                        state.master_id = myClientId;
+                        state.last_ping = now;
+                        await supabaseClient.from('live_state').upsert({ id: 1, state_data: state, last_updated: now });
+                    } else if (state.master_id === myClientId) {
+                        isMaster = true;
+                        state.last_ping = now;
+                        await supabaseClient.from('live_state').upsert({ id: 1, state_data: state, last_updated: now });
+                    } else {
+                        isMaster = false;
+                    }
+                } else if (error && error.code === 'PGRST116') {
+                    // Si desaparece por algún motivo, la recreamos
+                    const initialState = {
+                        master_id: myClientId,
+                        last_ping: now,
+                        estadoEspera, estadoLavado, estadoSecado, estadoTerminado, activeAutos
+                    };
+                    isMaster = true;
+                    await supabaseClient.from('live_state').insert({ id: 1, state_data: initialState, last_updated: now });
+                }
+            } catch(e) {}
+        }, 5000);
+
+        // Subscribe to changes
+        supabaseClient.channel('live_state_changes')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'live_state', filter: 'id=eq.1' }, payload => {
+                const state = payload.new.state_data;
+                if (state && state.master_id !== myClientId) { // If I am master, I already have the latest state
+                    estadoEspera = state.estadoEspera || new Array(8).fill(null);
+                    estadoLavado = state.estadoLavado || null;
+                    estadoSecado = state.estadoSecado || [null, null];
+                    estadoTerminado = state.estadoTerminado || [null, null, null, null];
+                    activeAutos = state.activeAutos || {};
+                    updateVisuals();
+                }
+            })
+            .subscribe();
+    }
+    initRealtime();
 
     // Función para crear una versión con fondo transparente del auto
     let carImageSrc = 'f1_car_top_down.png';
@@ -480,6 +581,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funciones para ingresar autos
+    async function syncStateToSupabase() {
+        const stateStr = JSON.stringify({ estadoEspera, estadoLavado, estadoSecado, estadoTerminado, activeAutos });
+        if (stateStr !== lastStateString) {
+            lastStateString = stateStr;
+            try {
+                const { data, error } = await supabaseClient.from('live_state').select('state_data').eq('id', 1).single();
+                let newState = {};
+                if (data && data.state_data) {
+                    newState = data.state_data;
+                } else if (error && error.code === 'PGRST116') {
+                    // Si no existe, inicializamos metadata vacía
+                    newState = { master_id: myClientId, last_ping: Date.now() };
+                }
+                
+                newState.estadoEspera = estadoEspera;
+                newState.estadoLavado = estadoLavado;
+                newState.estadoSecado = estadoSecado;
+                newState.estadoTerminado = estadoTerminado;
+                newState.activeAutos = activeAutos;
+                
+                if (data || (error && error.code === 'PGRST116')) {
+                    await supabaseClient.from('live_state').upsert({ id: 1, state_data: newState, last_updated: Date.now() });
+                }
+            } catch(e) {}
+        }
+    }
+
     function ingresarAuto(tipo) {
         let targetIndices = [];
         if (tipo === 'solo_secado') {
@@ -501,10 +629,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (freeIdx !== undefined) {
-            estadoEspera[freeIdx] = { id: autoIdCounter++, patente: randomPatente, tipo: tipo, startTime: Date.now() };
+            const newId = uuidv4();
+            const autoObj = { id: newId, patente: randomPatente, tipo: tipo, startTime: Date.now() };
+            activeAutos[newId] = autoObj;
+            estadoEspera[freeIdx] = autoObj;
             if (advanceQueue()) {} // Las físicas los empujan hacia adelante dentro de su carril
             updateVisuals();
             checkMovement();
+            syncStateToSupabase();
         } else {
             alert('El carril correspondiente está lleno.');
         }
@@ -575,10 +707,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         const now = Date.now();
 
-        if (!isMoving) {
-            let carReleased = false;
+        if (isMaster) {
+            if (!isMoving) {
+                let carReleased = false;
 
-            // Procesar Lavado
+                // Procesar Lavado
             if (estadoLavado && estadoLavado.endTime <= now) {
                 if (estadoLavado.tipo === 'solo_lavado') {
                     let targetIndices = [0, 1, 2, 3]; 
@@ -663,6 +796,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Siempre chequear si la zona de espera puede avanzar
         checkMovement();
+        syncStateToSupabase();
+        
+        } // Fin if (isMaster)
         
         updateTimers();
         updateStatusBoard();
@@ -902,16 +1038,45 @@ document.addEventListener('DOMContentLoaded', () => {
     drawScalextricPaths();
 
     // === MÓDULO DE MÉTRICAS ===
-    let metricsHistory = JSON.parse(localStorage.getItem('metricsHistory')) || [];
+    let metricsHistory = [];
 
-    window.recordMetric = function(auto) {
+    // Cargar métricas desde Supabase
+    async function loadMetrics() {
+        try {
+            const { data, error } = await supabaseClient.from('metrics').select('*').order('timestamp', { ascending: true });
+            if (data && !error) {
+                metricsHistory = data;
+                window.updateMetricsUI();
+            }
+        } catch(e) { console.error("Error al cargar métricas", e); }
+    }
+    loadMetrics();
+
+    // Recibir nuevas métricas en tiempo real
+    supabaseClient.channel('metrics_changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'metrics' }, payload => {
+            const exists = metricsHistory.find(m => m.id === payload.new.id);
+            if (!exists) {
+                metricsHistory.push(payload.new);
+                window.updateMetricsUI();
+            }
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'metrics' }, payload => {
+            metricsHistory = [];
+            window.updateMetricsUI();
+        })
+        .subscribe();
+
+    window.recordMetric = async function(auto) {
+        if (!isMaster) return; // Solo el maestro guarda la métrica final en Supabase para evitar duplicados
+
         let rev = 0;
         if (auto.tipo === 'solo_lavado') { rev = window.APP_CONFIG.precioLavado; }
         else if (auto.tipo === 'solo_secado') { rev = window.APP_CONFIG.precioSecado; }
         else { rev = window.APP_CONFIG.precioCompleto; }
         
         const metricData = {
-            id: Date.now() + Math.random(),
+            id: auto.id || uuidv4(),
             patente: auto.patente || 'S/D',
             timestamp: Date.now(),
             tipo: auto.tipo,
@@ -919,43 +1084,12 @@ document.addEventListener('DOMContentLoaded', () => {
             profit: rev // La ganancia ahora es el 100% de la recaudación
         };
 
-        metricsHistory.push(metricData);
-        localStorage.setItem('metricsHistory', JSON.stringify(metricsHistory));
-        
-        const metricsView = document.getElementById('metrics-view');
-        if (metricsView && metricsView.style.display === 'block') {
-            window.updateMetricsUI();
-        }
-
-        // --- SUPABASE BACKEND INTEGRATION ---
-        const fechaStr = new Date(metricData.timestamp).toLocaleString();
-        let srvName = '';
-        if(metricData.tipo === 'solo_lavado') srvName = 'Solo Lavado';
-        else if (metricData.tipo === 'solo_secado') srvName = 'Solo Interior';
-        else srvName = 'Lavado + Interior';
-
-        const insertToSupabase = async () => {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('metricas')
-                    .insert([
-                        { 
-                            patente: metricData.patente, 
-                            fecha: fechaStr, 
-                            servicio: srvName, 
-                            recaudacion: metricData.revenue, 
-                            ganancia: metricData.profit 
-                        }
-                    ]);
-                
-                if (error) throw error;
-                console.log("Datos sincronizados con Supabase correctamente:", metricData.patente);
-            } catch (error) {
-                console.error("Error al enviar datos a Supabase:", error);
+        try {
+            const { error } = await supabaseClient.from('metrics').insert([metricData]);
+            if (error) {
+                console.error("Error al guardar métrica en Supabase:", error);
             }
-        };
-        
-        insertToSupabase();
+        } catch(e) { console.error(e); }
     };
 
     window.updateMetricsUI = function() {
@@ -1032,11 +1166,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Borrar Historial
     const btnClearHistory = document.getElementById('btn-clear-history');
     if (btnClearHistory) {
-        btnClearHistory.addEventListener('click', () => {
+        btnClearHistory.addEventListener('click', async () => {
             if(confirm("¿Estás seguro de que quieres borrar TODAS las métricas? Esta acción no se puede deshacer.")) {
-                metricsHistory = [];
-                localStorage.setItem('metricsHistory', JSON.stringify([]));
-                window.updateMetricsUI();
+                const { error } = await supabaseClient.from('metrics').delete().neq('id', '0'); // Borra todo
+                if (!error) {
+                    metricsHistory = [];
+                    window.updateMetricsUI();
+                } else {
+                    console.error("Error al borrar métricas:", error);
+                }
             }
         });
     }
