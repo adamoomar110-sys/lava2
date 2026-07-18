@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lavado Automático - L1deres</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e10600">
+    
+    <!-- Google Fonts para estilo Racing (F1) -->
+    <link href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <!-- Contenedor dinámico de pantallas -->
+    <div id="app-container">
+
+        <!-- Pantalla 1: Splash Screen (Animación Logo) -->
+        <div id="screen-splash" class="screen active">
+            <div class="splash-content">
+                <img src="../logo.jpg" alt="L1deres Logo" class="splash-logo">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+
+        <!-- Pantalla 2: Bienvenida -->
+        <div id="screen-welcome" class="screen">
+            <div class="card fade-in">
+                <h1 class="racing-font">BIENVENIDO</h1>
+                <p>Al sistema de lavado automático de última generación de <strong>L1deres</strong>.</p>
+                <div class="car-graphic">
+                    <img src="../f1_car_side.png" alt="F1 Car" onerror="this.style.display='none'">
+                </div>
+                <button class="btn btn-primary" onclick="nextScreen('screen-plate')">
+                    START ENGINE <i class='bx bx-right-arrow-alt'></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla 3: Patente -->
+        <div id="screen-plate" class="screen">
+            <div class="card slide-in">
+                <button class="back-btn" onclick="prevScreen('screen-welcome')"><i class='bx bx-arrow-back'></i></button>
+                <h2 class="racing-font">TU VEHÍCULO</h2>
+                <p>Ingresa la patente para comenzar:</p>
+                <input type="text" id="input-plate" placeholder="Ej: AB123CD o AA123BB" style="text-transform: uppercase;">
+                <p id="error-plate" class="error-msg">Por favor ingresa una patente válida.</p>
+                <button class="btn btn-primary" onclick="validateAndNext('plate', 'screen-type')">
+                    CONTINUAR <i class='bx bxs-chevron-right'></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla 4: Tipo de Lavado -->
+        <div id="screen-type" class="screen">
+            <div class="card slide-in">
+                <button class="back-btn" onclick="prevScreen('screen-plate')"><i class='bx bx-arrow-back'></i></button>
+                <h2 class="racing-font">SELECCIONA EL SERVICIO</h2>
+                <div class="options-grid">
+                    <button class="option-card" onclick="selectWash('Solo Lavado')">
+                        <i class='bx bx-water'></i>
+                        <span>Solo Lavado</span>
+                        <div class="price">Rápido</div>
+                    </button>
+                    <button class="option-card" onclick="selectWash('Solo Interior')">
+                        <i class='bx bx-wind'></i>
+                        <span>Solo Interior</span>
+                        <div class="price">Detalle</div>
+                    </button>
+                    <button class="option-card premium" onclick="selectWash('Lavado + Interior')">
+                        <i class='bx bx-star'></i>
+                        <span>Completo</span>
+                        <div class="price">Premium</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla 5: Teléfono -->
+        <div id="screen-phone" class="screen">
+            <div class="card slide-in">
+                <button class="back-btn" onclick="prevScreen('screen-type')"><i class='bx bx-arrow-back'></i></button>
+                <h2 class="racing-font">CONTACTO</h2>
+                <p>Te enviaremos el ticket y avisos por WhatsApp:</p>
+                <div class="input-group">
+                    <span class="prefix">+54</span>
+                    <input type="tel" id="input-phone" placeholder="11 1234-5678">
+                </div>
+                <p id="error-phone" class="error-msg">Ingresa un número válido.</p>
+                <button class="btn btn-primary" onclick="validateAndNext('phone', 'screen-payment')">
+                    CONTINUAR AL PAGO <i class='bx bx-credit-card'></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla 6: Pago con Mercado Pago -->
+        <div id="screen-payment" class="screen">
+            <div class="card slide-in">
+                <button class="back-btn" onclick="prevScreen('screen-phone')"><i class='bx bx-arrow-back'></i></button>
+                <h2 class="racing-font">CHECKOUT</h2>
+                <div class="order-summary">
+                    <h3>Resumen del Servicio</h3>
+                    <p>Patente: <strong id="summary-plate">-</strong></p>
+                    <p>Servicio: <strong id="summary-type">-</strong></p>
+                </div>
+                
+                <button class="btn btn-mp" onclick="processPayment()">
+                    <img src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.5/mercadopago/logo__small@2x.png" alt="Mercado Pago" style="height: 20px;">
+                    Pagar con Mercado Pago
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla 7: Reseñas / Final -->
+        <div id="screen-review" class="screen">
+            <div class="card fade-in" style="text-align: center;">
+                <h2 class="racing-font" style="color: #10b981;">¡PAGO EXITOSO!</h2>
+                <p>Tu vehículo ya ingresó al pit lane de L1deres.</p>
+                
+                <div class="review-section">
+                    <p>¿Qué te pareció la experiencia?</p>
+                    <div class="stars">
+                        <i class='bx bx-star star' data-value="1"></i>
+                        <i class='bx bx-star star' data-value="2"></i>
+                        <i class='bx bx-star star' data-value="3"></i>
+                        <i class='bx bx-star star' data-value="4"></i>
+                        <i class='bx bx-star star' data-value="5"></i>
+                    </div>
+                    <button id="btn-submit-review" class="btn btn-primary" style="display:none; margin-top: 20px;" onclick="finishFlow()">
+                        ENVIAR RESEÑA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer Fijo -->
+    <footer class="app-footer">
+        <p>&copy; 2026 Aura. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>

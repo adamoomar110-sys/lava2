@@ -40,6 +40,10 @@
                     <span>Vehículos</span>
                 </button>
                 <button class="nav-btn">
+                    <i class='bx bx-time-five'></i>
+                    <span>Reservas</span>
+                </button>
+                <button class="nav-btn">
                     <i class='bx bx-line-chart'></i>
                     <span>Métricas</span>
                 </button>
@@ -191,6 +195,30 @@
                     </thead>
                     <tbody id="metrics-table-body">
                         <!-- Filas de datos -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <!-- Vista de Reservas -->
+        <main class="main-content" id="reservas-view" style="display: none;">
+            <div class="metrics-header">
+                <h2>Reservas / Cola de Espera</h2>
+            </div>
+            
+            <div class="reservas-container">
+                <p>Los autos pagados desde el celular (PWA) aparecerán aquí en tiempo real.</p>
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Patente</th>
+                            <th>Servicio</th>
+                            <th>Teléfono</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservas-table-body">
+                        <!-- Las reservas en tiempo real se cargarán aquí -->
                     </tbody>
                 </table>
             </div>

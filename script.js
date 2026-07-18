@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab System
     const dashboardView = document.getElementById('dashboard-view');
     const metricsView = document.getElementById('metrics-view');
+    const reservasView = document.getElementById('reservas-view');
     
     navButtons.forEach(btn => {
         if (btn.id === 'btn-config') return; // Config is handled separately
@@ -29,18 +30,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Switch views
             const spanText = btn.querySelector('span').textContent;
+            
+            // Hide all
+            if (dashboardView) dashboardView.style.display = 'none';
+            if (metricsView) metricsView.style.display = 'none';
+            if (reservasView) reservasView.style.display = 'none';
+
             if (spanText === 'Métricas') {
-                if (dashboardView) dashboardView.style.display = 'none';
                 if (metricsView) {
                     metricsView.style.display = 'block';
                     updateMetricsUI(); // Render data when tab is opened
                 }
+            } else if (spanText === 'Reservas') {
+                if (reservasView) {
+                    reservasView.style.display = 'block';
+                }
             } else if (spanText === 'Panel Principal') {
-                if (metricsView) metricsView.style.display = 'none';
                 if (dashboardView) dashboardView.style.display = 'flex';
             } else {
                 // Other tabs not implemented yet
-                if (metricsView) metricsView.style.display = 'none';
                 if (dashboardView) dashboardView.style.display = 'flex';
             }
         });
@@ -477,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funciones para ingresar autos
-    function ingresarAuto(tipo) {
+    function ingresarAuto(tipo, patenteCustom = null) {
         let targetIndices = [];
         if (tipo === 'solo_secado') {
             targetIndices = [0, 2, 4, 6]; // Carril Izquierdo
@@ -487,15 +495,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let freeIdx = targetIndices.find(idx => estadoEspera[idx] === null);
         
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        const l1 = letters[Math.floor(Math.random() * 26)];
-        const l2 = letters[Math.floor(Math.random() * 26)];
-        const l3 = letters[Math.floor(Math.random() * 26)];
-        const num = Math.floor(100 + Math.random() * 900);
-        const randomPatente = `A${l1}${l2}${num}${l3}`; // Formato Mercosur simulado
+        let patenteFinal = patenteCustom;
+        if (!patenteFinal) {
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const l1 = letters[Math.floor(Math.random() * 26)];
+            const l2 = letters[Math.floor(Math.random() * 26)];
+            const l3 = letters[Math.floor(Math.random() * 26)];
+            const num = Math.floor(100 + Math.random() * 900);
+            patenteFinal = `A${l1}${l2}${num}${l3}`; // Formato Mercosur simulado
+        }
 
         if (freeIdx !== undefined) {
-            estadoEspera[freeIdx] = { id: autoIdCounter++, patente: randomPatente, tipo: tipo, startTime: Date.now() };
+            estadoEspera[freeIdx] = { id: autoIdCounter++, patente: patenteFinal, tipo: tipo, startTime: Date.now() };
             if (advanceQueue()) {} // Las físicas los empujan hacia adelante dentro de su carril
             updateVisuals();
             checkMovement();
@@ -1034,4 +1045,126 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // ==========================================
+    // SISTEMA DE RESERVAS (TIEMPO REAL)
+    // ==========================================
+    let pendingReservations = [];
+
+    // Función para renderizar la tabla de reservas
+    function renderReservations() {
+        const tbody = document.getElementById('reservas-table-body');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        // Actualizar el texto en el Dashboard (Panel Principal)
+        const zonaReserva = document.querySelector('.reserva-online');
+        if (zonaReserva) {
+            if (pendingReservations.length > 0) {
+                zonaReserva.innerHTML = `Zona Reserva Online<br><span style="color: #facc15; font-weight: bold; font-size: 1.1rem;">(${pendingReservations.length} en espera)</span>`;
+            } else {
+                zonaReserva.innerHTML = 'Zona Reserva Online';
+            }
+        }
+
+        if (pendingReservations.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="4" style="text-align: center; color: #9ca3af; padding: 20px;">No hay autos en cola.</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        pendingReservations.forEach(reserva => {
+            const tr = document.createElement('tr');
+            
+            let srvName = '';
+            if(reserva.tipo_lavado === 'solo_lavado') srvName = 'Solo Lavado';
+            else if (reserva.tipo_lavado === 'solo_secado') srvName = 'Solo Interior';
+            else srvName = 'Lavado + Interior';
+
+            tr.innerHTML = `
+                <td style="font-weight: bold; color: var(--primary-color);">${reserva.patente}</td>
+                <td>${srvName}</td>
+                <td>${reserva.telefono || 'S/D'}</td>
+                <td>
+                    <button class="btn-dar-ingreso" data-id="${reserva.id}" style="padding: 8px 15px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                        Dar Ingreso
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Asignar eventos a los botones
+        document.querySelectorAll('.btn-dar-ingreso').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const reservaId = parseInt(e.target.getAttribute('data-id'));
+                const reserva = pendingReservations.find(r => r.id === reservaId);
+                if (reserva) {
+                    // Cambiar estado en BD
+                    const { error } = await supabaseClient
+                        .from('reservas_pendientes')
+                        .update({ estado: 'ingresado' })
+                        .eq('id', reservaId);
+                    
+                    if (!error) {
+                        // Ingresar el auto a la pista
+                        ingresarAuto(reserva.tipo_lavado, reserva.patente);
+                        
+                        // Quitar de la lista local
+                        pendingReservations = pendingReservations.filter(r => r.id !== reservaId);
+                        renderReservations();
+                    } else {
+                        console.error('Error actualizando reserva:', error);
+                        alert('Error al dar ingreso. Intente nuevamente.');
+                    }
+                }
+            });
+        });
+    }
+
+    // Cargar reservas iniciales
+    async function loadReservations() {
+        const { data, error } = await supabaseClient
+            .from('reservas_pendientes')
+            .select('*')
+            .eq('estado', 'pendiente')
+            .order('created_at', { ascending: true });
+            
+        if (!error && data) {
+            pendingReservations = data;
+            renderReservations();
+        } else {
+            console.error('Error cargando reservas:', error);
+        }
+    }
+
+    // Suscribirse a cambios en tiempo real
+    function subscribeToReservations() {
+        supabaseClient
+            .channel('reservas_channel')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservas_pendientes' }, payload => {
+                if (payload.new.estado === 'pendiente') {
+                    pendingReservations.push(payload.new);
+                    renderReservations();
+                    
+                    // Notificación visual o sonora (opcional)
+                    console.log('¡Nueva reserva recibida!', payload.new.patente);
+                }
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reservas_pendientes' }, payload => {
+                if (payload.new.estado !== 'pendiente') {
+                    // Remover si alguien más le dio ingreso o se canceló
+                    pendingReservations = pendingReservations.filter(r => r.id !== payload.new.id);
+                    renderReservations();
+                }
+            })
+            .subscribe();
+    }
+
+    // Iniciar carga y suscripción
+    loadReservations();
+    subscribeToReservations();
+
 });
