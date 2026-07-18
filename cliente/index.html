@@ -36,6 +36,9 @@
                 <button class="btn btn-primary" onclick="nextScreen('screen-plate')">
                     START ENGINE <i class='bx bx-right-arrow-alt'></i>
                 </button>
+                <button id="btn-install" class="btn" style="display: none; margin-top: 15px; background: #3b82f6; color: white;">
+                    <i class='bx bx-download'></i> Instalar App
+                </button>
             </div>
         </div>
 
@@ -58,6 +61,11 @@
             <div class="card slide-in">
                 <button class="back-btn" onclick="prevScreen('screen-plate')"><i class='bx bx-arrow-back'></i></button>
                 <h2 class="racing-font">SELECCIONA EL SERVICIO</h2>
+                
+                <div id="promo-banner" style="display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: bold; font-size: 0.9rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                    <!-- Mensaje de promo dinámico -->
+                </div>
+
                 <div class="options-grid">
                     <button class="option-card" onclick="selectWash('Solo Lavado')">
                         <i class='bx bx-water'></i>
@@ -136,6 +144,10 @@
                     <button id="btn-submit-review" class="btn btn-primary" style="display:none; margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto;" onclick="finishFlow()">
                         ENVIAR RESEÑA
                     </button>
+                    
+                    <button id="btn-whatsapp" class="btn" style="display:none; margin-top: 15px; width: 80%; margin-left: auto; margin-right: auto; background: #25D366; color: white;" onclick="contactWhatsApp()">
+                        <i class='bx bxl-whatsapp'></i> Contactar por WhatsApp
+                    </button>
                 </div>
             </div>
         </div>
@@ -144,7 +156,7 @@
 
     <!-- Footer Fijo -->
     <footer class="app-footer">
-        <p>&copy; 2026 Aura. Todos los derechos reservados.</p>
+        <p>&copy; 2026 Aura. Todos los derechos reservados. | v1.4</p>
     </footer>
 
     <!-- Supabase SDK -->

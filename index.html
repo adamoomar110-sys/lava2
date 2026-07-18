@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Aura v1.3</title>
+    <title>Dashboard - Aura v1.4</title>
     <link rel="stylesheet" href="style.css?v=14">
     <!-- Google Fonts: Inter and Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
@@ -47,13 +47,13 @@
                     <i class='bx bx-line-chart'></i>
                     <span>Métricas</span>
                 </button>
-                <button class="nav-btn" id="btn-config">
+                <button class="nav-btn">
                     <i class='bx bx-cog'></i>
                     <span>Configuración</span>
                 </button>
                 <button class="nav-btn">
-                    <i class='bx bx-help-circle'></i>
-                    <span>Ayuda</span>
+                    <i class='bx bx-gift'></i>
+                    <span>Promociones</span>
                 </button>
                 <button class="nav-btn" id="btn-whatsapp" onclick="window.open('https://web.whatsapp.com/', '_blank')">
                     <i class='bx bxl-whatsapp' style="color: #25D366;"></i>
@@ -62,7 +62,7 @@
             </nav>
 
             <div class="sidebar-footer">
-                <p>&copy; 2026 Aura. Todos los derechos reservados.</p>
+                <p>&copy; 2026 Aura. Todos los derechos reservados. | v1.4</p>
             </div>
         </aside>
 
@@ -264,9 +264,12 @@
         <main class="main-content" id="client-reviews-view" style="display: none;">
             <div class="metrics-header">
                 <h2>Reseñas de Clientes</h2>
-                <button class="btn btn-primary" onclick="if(window.fetchClientReviews) window.fetchClientReviews()" style="display: flex; align-items: center; gap: 5px;">
-                    <i class='bx bx-refresh'></i> Actualizar
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="review-filter" placeholder="Buscar patente o teléfono..." class="price-input" style="padding: 8px 12px; width: 250px;" onkeyup="if(window.filterReviews) window.filterReviews(this.value)">
+                    <button class="btn btn-primary" onclick="if(window.fetchClientReviews) window.fetchClientReviews()" style="display: flex; align-items: center; gap: 5px;">
+                        <i class='bx bx-refresh'></i> Actualizar
+                    </button>
+                </div>
             </div>
             
             <div class="metrics-table-container">
@@ -274,9 +277,11 @@
                     <thead>
                         <tr>
                             <th>Patente</th>
+                            <th>Teléfono</th>
                             <th>Servicio</th>
                             <th>Calificación</th>
                             <th>Comentario</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="client-reviews-table-body">
@@ -285,60 +290,76 @@
                 </table>
             </div>
         </main>
-    </div>
 
-    <!-- Modal de Configuración -->
-    <div id="config-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class='bx bx-cog'></i> Configuración de Tiempos</h2>
-                <button class="close-btn" id="close-config">&times;</button>
+        <!-- Modal de Promociones (Renderizado dinámico) -->
+        <main class="main-content" id="promociones-view" style="display: none; padding: 2rem;">
+            <div class="metrics-header" style="margin-bottom: 2rem;">
+                <h2>Gestión de Promociones</h2>
+                <p style="color: var(--text-secondary);">Activa o desactiva las promociones por cantidad de lavados de una patente.</p>
             </div>
-            <div class="modal-body">
-                <div class="modal-section">
-                    <h3 class="section-title"><i class='bx bx-time'></i> Tiempos de Servicio</h3>
-                    <div class="form-group">
-                        <label>Tiempo de Lavado:</label>
-                        <div class="time-inputs">
-                            <input type="number" id="lavado-min" min="0" max="60" value="0">
+            <div id="promociones-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                <!-- Se llena con JS -->
+            </div>
+        </main>
+        <!-- Vista de Configuración -->
+        <main class="main-content" id="config-view" style="display: none; padding: 2rem; overflow-y: auto;">
+            <div class="metrics-header" style="margin-bottom: 2rem;">
+                <div>
+                    <h2><i class='bx bx-cog'></i> Configuración</h2>
+                    <p style="color: var(--text-secondary); margin-top: 5px;">Ajusta los tiempos, precios y contacto de tu lavadero.</p>
+                </div>
+                <button class="btn btn-primary" id="save-config" style="padding: 12px 24px; font-size: 1.1rem;"><i class='bx bx-save'></i> Guardar Cambios</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="card" style="padding: 1.5rem; background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 12px;">
+                    <h3 class="section-title" style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);"><i class='bx bx-time'></i> Tiempos de Servicio</h3>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Tiempo de Lavado:</label>
+                        <div class="time-inputs" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="lavado-min" min="0" max="60" value="0" class="price-input" style="width: 70px;">
                             <span>min</span>
-                            <input type="number" id="lavado-sec" min="0" max="59" value="5">
+                            <input type="number" id="lavado-sec" min="0" max="59" value="5" class="price-input" style="width: 70px;">
                             <span>seg</span>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Tiempo de Interior:</label>
-                        <div class="time-inputs">
-                            <input type="number" id="secado-min" min="0" max="60" value="0">
+                        <label style="display: block; margin-bottom: 5px;">Tiempo de Interior:</label>
+                        <div class="time-inputs" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="secado-min" min="0" max="60" value="0" class="price-input" style="width: 70px;">
                             <span>min</span>
-                            <input type="number" id="secado-sec" min="0" max="59" value="5">
+                            <input type="number" id="secado-sec" min="0" max="59" value="5" class="price-input" style="width: 70px;">
                             <span>seg</span>
                         </div>
                     </div>
                 </div>
                 
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
-                
-                <div class="modal-section">
-                    <h3 class="section-title"><i class='bx bx-dollar-circle'></i> Precios</h3>
+                <div class="card" style="padding: 1.5rem; background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 12px;">
+                    <h3 class="section-title" style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);"><i class='bx bxl-whatsapp'></i> Contacto</h3>
                     <div class="form-group">
-                        <label>Precio Solo Lavado ($):</label>
-                        <input type="number" id="precio-lavado" min="0" value="0" class="price-input">
+                        <label style="display: block; margin-bottom: 5px;">Número de WhatsApp:</label>
+                        <input type="text" id="config-whatsapp" placeholder="Ej: 5491123456789" class="price-input" style="width: 100%;">
+                        <small style="color: #6b7280; font-size: 0.8rem; margin-top: 8px; display: block;">Ingresa el código de país sin el + (ej. 549...)</small>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 1.5rem; background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 12px;">
+                    <h3 class="section-title" style="margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);"><i class='bx bx-dollar-circle'></i> Precios</h3>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Precio Solo Lavado ($):</label>
+                        <input type="number" id="precio-lavado" min="0" value="0" class="price-input" style="width: 100%;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Precio Solo Interior ($):</label>
+                        <input type="number" id="precio-secado" min="0" value="0" class="price-input" style="width: 100%;">
                     </div>
                     <div class="form-group">
-                        <label>Precio Solo Interior ($):</label>
-                        <input type="number" id="precio-secado" min="0" value="0" class="price-input">
-                    </div>
-                    <div class="form-group">
-                        <label>Precio Lavado + Interior ($):</label>
-                        <input type="number" id="precio-completo" min="0" value="0" class="price-input">
+                        <label style="display: block; margin-bottom: 5px;">Precio Lavado + Interior ($):</label>
+                        <input type="number" id="precio-completo" min="0" value="0" class="price-input" style="width: 100%;">
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="save-config">Guardar Cambios</button>
-            </div>
-        </div>
+        </main>
     </div>
 
     <!-- Supabase SDK -->

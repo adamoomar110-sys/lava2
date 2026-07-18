@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_URL = 'https://ojalzcfjrlkkyyqvihvc.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_lkMNUGG8ML6nv5yMwezq1Q_bC7_xabQ';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.supabaseClient = supabaseClient;
 
     // === CONFIGURACIÓN GLOBAL ===
     window.APP_CONFIG = {
@@ -20,9 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const reservasView = document.getElementById('reservas-view');
     const camaraView = document.getElementById('camara-view');
     const clientReviewsView = document.getElementById('client-reviews-view');
+    const promocionesView = document.getElementById('promociones-view');
+    const configView = document.getElementById('config-view');
     
     navButtons.forEach(btn => {
-        if (btn.id === 'btn-config' || btn.id === 'btn-whatsapp') return;
+        if (btn.id === 'btn-whatsapp') return;
         
         btn.addEventListener('click', () => {
             // Remove active from all
@@ -38,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (reservasView) reservasView.style.display = 'none';
             if (camaraView) camaraView.style.display = 'none';
             if (clientReviewsView) clientReviewsView.style.display = 'none';
+            if (promocionesView) promocionesView.style.display = 'none';
+            if (configView) configView.style.display = 'none';
 
             if (spanText === 'Métricas') {
                 if (metricsView) {
@@ -57,6 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (camaraView) {
                     camaraView.style.display = 'block';
                 }
+            } else if (spanText === 'Promociones') {
+                if (promocionesView) {
+                    promocionesView.style.display = 'block';
+                    if (window.fetchPromociones) window.fetchPromociones();
+                }
+            } else if (spanText === 'Configuración') {
+                if (configView) {
+                    configView.style.display = 'block';
+                }
             } else if (spanText === 'Panel Principal') {
                 if (dashboardView) dashboardView.style.display = 'flex';
             } else {
@@ -66,10 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Lógica del Modal de Configuración
-    const btnConfig = document.getElementById('btn-config');
-    const modalConfig = document.getElementById('config-modal');
-    const btnCloseConfig = document.getElementById('close-config');
+    // Lógica de Configuración (Ahora es una pestaña/view)
     const btnSaveConfig = document.getElementById('save-config');
     
     const lavadoMin = document.getElementById('lavado-min');
@@ -80,26 +91,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const precioLavadoInput = document.getElementById('precio-lavado');
     const precioSecadoInput = document.getElementById('precio-secado');
     const precioCompletoInput = document.getElementById('precio-completo');
+    const configWhatsappInput = document.getElementById('config-whatsapp');
 
-    if (btnConfig && modalConfig) {
-        btnConfig.addEventListener('click', () => {
-            const lSegs = Math.floor(window.APP_CONFIG.tiempoLavado / 1000);
-            lavadoMin.value = Math.floor(lSegs / 60);
-            lavadoSec.value = lSegs % 60;
-            
-            const sSegs = Math.floor(window.APP_CONFIG.tiempoSecado / 1000);
-            secadoMin.value = Math.floor(sSegs / 60);
-            secadoSec.value = sSegs % 60;
-            
-            precioLavadoInput.value = window.APP_CONFIG.precioLavado;
-            precioSecadoInput.value = window.APP_CONFIG.precioSecado;
-            precioCompletoInput.value = window.APP_CONFIG.precioCompleto;
+    if (btnSaveConfig) {
+        // Populate inputs initially
+        lavadoMin.value = Math.floor(window.APP_CONFIG.tiempoLavado / 60000);
+        lavadoSec.value = (window.APP_CONFIG.tiempoLavado % 60000) / 1000;
+        secadoMin.value = Math.floor(window.APP_CONFIG.tiempoSecado / 60000);
+        secadoSec.value = (window.APP_CONFIG.tiempoSecado % 60000) / 1000;
+        precioLavadoInput.value = window.APP_CONFIG.precioLavado;
+        precioSecadoInput.value = window.APP_CONFIG.precioSecado;
+        precioCompletoInput.value = window.APP_CONFIG.precioCompleto;
+        configWhatsappInput.value = window.APP_CONFIG.whatsapp || '';
 
-            modalConfig.classList.add('show');
-        });
-
-        btnCloseConfig.addEventListener('click', () => modalConfig.classList.remove('show'));
-        
         btnSaveConfig.addEventListener('click', () => {
             const lMins = parseInt(lavadoMin.value) || 0;
             const lSecs = parseInt(lavadoSec.value) || 0;
@@ -112,13 +116,32 @@ document.addEventListener('DOMContentLoaded', () => {
             window.APP_CONFIG.precioLavado = parseInt(precioLavadoInput.value) || 0;
             window.APP_CONFIG.precioSecado = parseInt(precioSecadoInput.value) || 0;
             window.APP_CONFIG.precioCompleto = parseInt(precioCompletoInput.value) || 0;
+            
+            window.APP_CONFIG.whatsapp = configWhatsappInput ? configWhatsappInput.value.trim() : '';
 
             localStorage.setItem('tiempoLavado', window.APP_CONFIG.tiempoLavado);
             localStorage.setItem('tiempoSecado', window.APP_CONFIG.tiempoSecado);
             localStorage.setItem('precioLavado', window.APP_CONFIG.precioLavado);
             localStorage.setItem('precioSecado', window.APP_CONFIG.precioSecado);
             localStorage.setItem('precioCompleto', window.APP_CONFIG.precioCompleto);
-            modalConfig.classList.remove('show');
+            
+            // Sincronizar con Supabase
+            if (window.supabase) {
+                window.supabase.from('configuracion').upsert({
+                    id: 1,
+                    whatsapp_number: window.APP_CONFIG.whatsapp,
+                    tiempo_lavado: window.APP_CONFIG.tiempoLavado,
+                    tiempo_secado: window.APP_CONFIG.tiempoSecado,
+                    precio_lavado: window.APP_CONFIG.precioLavado,
+                    precio_secado: window.APP_CONFIG.precioSecado,
+                    precio_completo: window.APP_CONFIG.precioCompleto
+                }).then(({error}) => {
+                    if (error) console.error("Error guardando config en Supabase:", error);
+                    else alert("¡Configuración guardada correctamente!"); // showToast may not be defined globally or accessible here without DOM elements
+                });
+            } else {
+                alert('Configuración guardada localmente.');
+            }
         });
     }
 
@@ -270,6 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // SISTEMA DE RESEÑAS DE CLIENTES
     // ==========================================
+    window.allReviewsData = [];
+
     window.fetchClientReviews = async function() {
         const tbody = document.getElementById('client-reviews-table-body');
         if (!tbody) return;
@@ -286,38 +311,87 @@ document.addEventListener('DOMContentLoaded', () => {
                 
             if (error) throw error;
             
-            tbody.innerHTML = '';
-            
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #9ca3af; padding: 20px;">No hay reseñas todavía.</td></tr>';
-                return;
-            }
-            
-            const emojis = { '1': '😡', '2': '😞', '3': '😐', '4': '🙂', '5': '😍' };
-            
-            data.forEach(rev => {
-                const tr = document.createElement('tr');
-                
-                let srvName = '';
-                if(rev.tipo_lavado === 'solo_lavado') srvName = 'Solo Lavado';
-                else if (rev.tipo_lavado === 'solo_secado') srvName = 'Solo Interior';
-                else srvName = 'Lavado + Interior';
-                
-                const emoji = emojis[rev.rating] || '⭐';
-                const starsHtml = `<span style="color:#facc15;">${'★'.repeat(rev.rating)}${'☆'.repeat(5-rev.rating)}</span> <span style="font-size: 1.2rem; margin-left: 5px;">${emoji}</span>`;
-                
-                tr.innerHTML = `
-                    <td style="font-weight: bold; color: var(--primary-color);">${rev.patente || 'S/D'}</td>
-                    <td>${srvName}</td>
-                    <td>${starsHtml}</td>
-                    <td style="font-style: italic; color: #d1d5db;">${rev.comentario ? '"' + rev.comentario + '"' : '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            window.allReviewsData = data || [];
+            window.renderReviews(window.allReviewsData);
             
         } catch (err) {
             console.error("Error cargando reseñas:", err);
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 20px;">Error al cargar las reseñas.</td></tr>';
+            const tbody = document.getElementById('client-reviews-table-body');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 20px;">Error al cargar las reseñas.</td></tr>';
+        }
+    };
+
+    window.renderReviews = function(data) {
+        const tbody = document.getElementById('client-reviews-table-body');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #9ca3af; padding: 20px;">No hay reseñas todavía.</td></tr>';
+            return;
+        }
+        
+        const emojis = { '1': '😡', '2': '😞', '3': '😐', '4': '🙂', '5': '😍' };
+        
+        data.forEach(rev => {
+            const tr = document.createElement('tr');
+            
+            let srvName = '';
+            if(rev.tipo_lavado === 'solo_lavado') srvName = 'Solo Lavado';
+            else if (rev.tipo_lavado === 'solo_secado') srvName = 'Solo Interior';
+            else srvName = 'Lavado + Interior';
+            
+            const emoji = emojis[rev.rating] || '⭐';
+            const starsHtml = `<span style="color:#facc15;">${'★'.repeat(rev.rating)}${'☆'.repeat(5-rev.rating)}</span> <span style="font-size: 1.2rem; margin-left: 5px;">${emoji}</span>`;
+            
+            // Format phone if available
+            let phone = rev.telefono || '-';
+            
+            tr.innerHTML = `
+                <td style="font-weight: bold; color: var(--primary-color);">${rev.patente || 'S/D'}</td>
+                <td>${phone}</td>
+                <td>${srvName}</td>
+                <td>${starsHtml}</td>
+                <td style="font-style: italic; color: #d1d5db;">${rev.comentario ? '"' + rev.comentario + '"' : '-'}</td>
+                <td>
+                    <button onclick="if(window.deleteReview) window.deleteReview(${rev.id})" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'" title="Borrar reseña">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    window.filterReviews = function(query) {
+        if (!window.allReviewsData) return;
+        const q = query.toLowerCase().trim();
+        const filtered = window.allReviewsData.filter(rev => {
+            const pat = (rev.patente || '').toLowerCase();
+            const tel = (rev.telefono || '').toLowerCase();
+            return pat.includes(q) || tel.includes(q);
+        });
+        window.renderReviews(filtered);
+    };
+
+    window.deleteReview = async function(id) {
+        if (!window.supabase) return;
+        if (!confirm('¿Estás seguro que deseas borrar esta reseña?')) return;
+        
+        try {
+            const { error } = await window.supabase
+                .from('reservas_pendientes')
+                .update({ rating: null, comentario: null })
+                .eq('id', id);
+                
+            if (error) throw error;
+            
+            // Refrescar lista
+            if (window.fetchClientReviews) window.fetchClientReviews();
+        } catch (e) {
+            console.error("Error borrando reseña:", e);
+            alert("Hubo un error al borrar la reseña.");
         }
     };
 
@@ -406,12 +480,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 timer = document.createElement('div');
                 timer.className = 'car-timer';
                 
+                let plate = document.createElement('div');
+                plate.className = 'car-plate';
+                plate.textContent = autoObj.patente || id;
+                
                 wrapper.appendChild(icon);
                 wrapper.appendChild(timer);
+                wrapper.appendChild(plate);
                 canvas.appendChild(wrapper);
             } else {
                 icon = wrapper.querySelector('.auto-icon');
                 timer = wrapper.querySelector('.car-timer');
+                let plate = wrapper.querySelector('.car-plate');
+                if (plate) plate.textContent = autoObj.patente || id;
             }
             
             // Calculamos posición destino exacta usando el DOM real
@@ -551,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funciones para ingresar autos
-    function ingresarAuto(tipo, patenteCustom = null) {
+    async function ingresarAuto(tipo, patenteCustom = null) {
         let targetIndices = [];
         if (tipo === 'solo_secado') {
             targetIndices = [0, 2, 4, 6]; // Carril Izquierdo
@@ -576,6 +657,38 @@ document.addEventListener('DOMContentLoaded', () => {
             if (advanceQueue()) {} // Las físicas los empujan hacia adelante dentro de su carril
             updateVisuals();
             checkMovement();
+            
+            // --- LOGICA DE PROMOCIONES ---
+            if (window.supabase) {
+                try {
+                    const { count } = await window.supabase
+                        .from('reservas_pendientes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('patente', patenteFinal)
+                        .eq('estado', 'completado');
+                    
+                    const { data: promos } = await window.supabase
+                        .from('promociones')
+                        .select('*')
+                        .eq('activa', true)
+                        .order('meta_visitas', { ascending: true });
+                        
+                    if (promos && promos.length > 0) {
+                        const visitas = (count || 0) + 1; // +1 porque la que ingresa ya cuenta
+                        
+                        let reachedPromo = promos.find(p => p.meta_visitas === visitas);
+                        let nextPromo = promos.find(p => p.meta_visitas > visitas);
+                        
+                        if (reachedPromo) {
+                            alert(`¡Promoción Alcanzada para la patente ${patenteFinal}!\nVisita #${visitas}.\nTiene disponible: ${reachedPromo.nombre}`);
+                        } else if (nextPromo) {
+                            const faltan = nextPromo.meta_visitas - visitas;
+                            console.log(`Patente ${patenteFinal} (Visita #${visitas}). Faltan ${faltan} para ${nextPromo.nombre}`);
+                        }
+                    }
+                } catch(e) { console.error("Error validando promociones", e); }
+            }
+            
         } else {
             alert('El carril correspondiente está lleno.');
         }
@@ -1287,5 +1400,86 @@ document.addEventListener('DOMContentLoaded', () => {
     // Iniciar carga y suscripción
     loadReservations();
     subscribeToReservations();
+
+    // ==========================================
+    // SISTEMA DE PROMOCIONES
+    // ==========================================
+    window.fetchPromociones = async function() {
+        const container = document.getElementById('promociones-container');
+        if (!container || !window.supabaseClient) return;
+
+        container.innerHTML = '<p style="color: #9ca3af;"><i class="bx bx-loader-alt bx-spin"></i> Cargando promociones...</p>';
+
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('promociones')
+                .select('*')
+                .order('meta_visitas', { ascending: true });
+
+            if (error) throw error;
+
+            container.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p style="color: #9ca3af;">No hay promociones configuradas.</p>';
+                return;
+            }
+
+            data.forEach(promo => {
+                const isChecked = promo.activa ? 'checked' : '';
+                const card = document.createElement('div');
+                card.className = 'promo-card';
+                card.style = 'background-color: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;';
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h3 style="color: #facc15; margin: 0 0 5px 0; font-size: 1.1rem;">${promo.nombre}</h3>
+                            <p style="color: #9ca3af; margin: 0; font-size: 0.9rem;">Requiere: <strong>${promo.meta_visitas} lavados</strong></p>
+                        </div>
+                        <div class="toggle-container" style="margin-left: 15px;">
+                            <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                                <input type="checkbox" onchange="window.togglePromo(${promo.id}, this.checked)" ${isChecked} style="opacity: 0; width: 0; height: 0;">
+                                <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;">
+                                    <!-- CSS para el slider debería estar en style.css pero inyectamos lo básico si falta -->
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                // Add inline style for toggle switch functionality just in case
+                const styleId = 'toggle-switch-style';
+                if(!document.getElementById(styleId)) {
+                    const style = document.createElement('style');
+                    style.id = styleId;
+                    style.innerHTML = `
+                        .switch input:checked + .slider { background-color: #10b981; }
+                        .switch input:focus + .slider { box-shadow: 0 0 1px #10b981; }
+                        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+                        .switch input:checked + .slider:before { transform: translateX(26px); }
+                    `;
+                    document.head.appendChild(style);
+                }
+                container.appendChild(card);
+            });
+        } catch (err) {
+            console.error("Error cargando promociones:", err);
+            container.innerHTML = '<p style="color: #ef4444;">Error al cargar las promociones.</p>';
+        }
+    };
+
+    window.togglePromo = async function(id, activa) {
+        if (!window.supabaseClient) return;
+        try {
+            const { error } = await window.supabaseClient
+                .from('promociones')
+                .update({ activa: activa })
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (err) {
+            console.error("Error actualizando promo:", err);
+            alert("No se pudo actualizar el estado de la promoción.");
+        }
+    };
 
 });

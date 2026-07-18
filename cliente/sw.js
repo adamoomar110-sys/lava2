@@ -1,4 +1,4 @@
-const CACHE_NAME = 'l1deres-pwa-v1';
+const CACHE_NAME = 'l1deres-pwa-v1.4';
 const urlsToCache = [
   './index.html',
   './style.css',
@@ -16,6 +16,23 @@ self.addEventListener('install', event => {
         return cache.addAll(urlsToCache);
       })
   );
+  self.skipWaiting();
+});
+
+// Activate event (clear old caches)
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
 
 // Fetch event
