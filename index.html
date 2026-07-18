@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Aura v1.1</title>
+    <title>Dashboard - Aura v1.3</title>
     <link rel="stylesheet" href="style.css?v=14">
     <!-- Google Fonts: Inter and Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
@@ -38,6 +38,10 @@
                 <button class="nav-btn">
                     <i class='bx bx-time-five'></i>
                     <span>Reservas</span>
+                </button>
+                <button class="nav-btn">
+                    <i class='bx bx-star'></i>
+                    <span>Reseñas de Clientes</span>
                 </button>
                 <button class="nav-btn">
                     <i class='bx bx-line-chart'></i>
@@ -253,6 +257,32 @@
                 <style>
                     @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
                 </style>
+            </div>
+        </main>
+
+        <!-- Vista de Reseñas de Clientes -->
+        <main class="main-content" id="client-reviews-view" style="display: none;">
+            <div class="metrics-header">
+                <h2>Reseñas de Clientes</h2>
+                <button class="btn btn-primary" onclick="if(window.fetchClientReviews) window.fetchClientReviews()" style="display: flex; align-items: center; gap: 5px;">
+                    <i class='bx bx-refresh'></i> Actualizar
+                </button>
+            </div>
+            
+            <div class="metrics-table-container">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Patente</th>
+                            <th>Servicio</th>
+                            <th>Calificación</th>
+                            <th>Comentario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-reviews-table-body">
+                        <tr><td colspan="4" style="text-align: center; color: #9ca3af; padding: 20px;">Cargando reseñas...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </main>
     </div>

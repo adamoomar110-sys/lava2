@@ -122,6 +122,18 @@ async function processPayment() {
 // Sistema de Reseñas (Estrellas)
 function setupStars() {
     const stars = document.querySelectorAll('.star');
+    const emojiContainer = document.getElementById('review-emoji');
+    const commentInput = document.getElementById('review-comment');
+    const btnSubmit = document.getElementById('btn-submit-review');
+
+    const emojis = {
+        '1': '😡',
+        '2': '😞',
+        '3': '😐',
+        '4': '🙂',
+        '5': '😍'
+    };
+
     stars.forEach(star => {
         star.addEventListener('click', function() {
             const value = this.getAttribute('data-value');
@@ -136,8 +148,18 @@ function setupStars() {
                 }
             });
 
-            // Mostrar botón enviar
-            document.getElementById('btn-submit-review').style.display = 'inline-block';
+            // Mostrar y actualizar emoji
+            if (emojiContainer) {
+                emojiContainer.textContent = emojis[value] || '🙂';
+                emojiContainer.style.display = 'block';
+                // Animación de rebote (pop)
+                emojiContainer.style.transform = 'scale(1.2)';
+                setTimeout(() => emojiContainer.style.transform = 'scale(1)', 200);
+            }
+
+            // Mostrar campo de comentario y botón enviar
+            if (commentInput) commentInput.style.display = 'block';
+            if (btnSubmit) btnSubmit.style.display = 'block';
         });
     });
 }
@@ -145,13 +167,20 @@ function setupStars() {
 async function finishFlow() {
     // Si queremos actualizar la reseña en la DB:
     if (appState.reservaId) {
+        const commentInput = document.getElementById('review-comment');
+        const comentarioText = commentInput ? commentInput.value.substring(0, 12).trim() : null;
+
         await supabaseClient
             .from('reservas_pendientes')
-            .update({ rating: appState.rating })
+            .update({ 
+                rating: appState.rating,
+                comentario: comentarioText
+            })
             .eq('id', appState.reservaId);
     }
     
-    alert("¡Gracias por tu reseña (" + appState.rating + " estrellas)! Te esperamos pronto en el lavadero.");
-    // Reiniciar la app
-    location.reload();
+    // Simular que terminó
+    alert("¡Gracias por tu reserva y tu reseña!");
+    // Reiniciar
+    window.location.reload();
 }

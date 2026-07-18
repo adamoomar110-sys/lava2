@@ -128,7 +128,12 @@
                         <i class='bx bx-star star' data-value="4"></i>
                         <i class='bx bx-star star' data-value="5"></i>
                     </div>
-                    <button id="btn-submit-review" class="btn btn-primary" style="display:none; margin-top: 20px;" onclick="finishFlow()">
+                    
+                    <div id="review-emoji" style="font-size: 3.5rem; margin: 15px 0; display: none; text-shadow: 0 0 15px rgba(255,255,255,0.2); transition: transform 0.2s;"></div>
+                    
+                    <input type="text" id="review-comment" maxlength="12" placeholder="Max 12 letras..." style="display:none; width: 80%; max-width: 250px; padding: 12px; margin: 10px auto; border-radius: 8px; border: 1px solid #333; background: #111; color: white; text-align: center; font-size: 1.1rem; text-transform: uppercase;">
+
+                    <button id="btn-submit-review" class="btn btn-primary" style="display:none; margin-top: 20px; width: 80%; margin-left: auto; margin-right: auto;" onclick="finishFlow()">
                         ENVIAR RESEÑA
                     </button>
                 </div>

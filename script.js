@@ -15,11 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const navButtons = document.querySelectorAll('.nav-btn');
     
-    // Tab System
     const dashboardView = document.getElementById('dashboard-view');
     const metricsView = document.getElementById('metrics-view');
     const reservasView = document.getElementById('reservas-view');
     const camaraView = document.getElementById('camara-view');
+    const clientReviewsView = document.getElementById('client-reviews-view');
     
     navButtons.forEach(btn => {
         if (btn.id === 'btn-config' || btn.id === 'btn-whatsapp') return;
@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (metricsView) metricsView.style.display = 'none';
             if (reservasView) reservasView.style.display = 'none';
             if (camaraView) camaraView.style.display = 'none';
+            if (clientReviewsView) clientReviewsView.style.display = 'none';
 
             if (spanText === 'Métricas') {
                 if (metricsView) {
@@ -46,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (spanText === 'Reservas') {
                 if (reservasView) {
                     reservasView.style.display = 'block';
+                }
+            } else if (spanText === 'Reseñas de Clientes') {
+                if (clientReviewsView) {
+                    clientReviewsView.style.display = 'block';
+                    if (window.fetchClientReviews) window.fetchClientReviews();
                 }
             } else if (spanText === 'Cámara de Ingreso') {
                 if (camaraView) {
@@ -260,6 +266,60 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // ==========================================
+    // SISTEMA DE RESEÑAS DE CLIENTES
+    // ==========================================
+    window.fetchClientReviews = async function() {
+        const tbody = document.getElementById('client-reviews-table-body');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #9ca3af; padding: 20px;"><i class="bx bx-loader-alt bx-spin"></i> Cargando reseñas...</td></tr>';
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('reservas_pendientes')
+                .select('*')
+                .not('rating', 'is', null)
+                .order('id', { ascending: false })
+                .limit(50);
+                
+            if (error) throw error;
+            
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #9ca3af; padding: 20px;">No hay reseñas todavía.</td></tr>';
+                return;
+            }
+            
+            const emojis = { '1': '😡', '2': '😞', '3': '😐', '4': '🙂', '5': '😍' };
+            
+            data.forEach(rev => {
+                const tr = document.createElement('tr');
+                
+                let srvName = '';
+                if(rev.tipo_lavado === 'solo_lavado') srvName = 'Solo Lavado';
+                else if (rev.tipo_lavado === 'solo_secado') srvName = 'Solo Interior';
+                else srvName = 'Lavado + Interior';
+                
+                const emoji = emojis[rev.rating] || '⭐';
+                const starsHtml = `<span style="color:#facc15;">${'★'.repeat(rev.rating)}${'☆'.repeat(5-rev.rating)}</span> <span style="font-size: 1.2rem; margin-left: 5px;">${emoji}</span>`;
+                
+                tr.innerHTML = `
+                    <td style="font-weight: bold; color: var(--primary-color);">${rev.patente || 'S/D'}</td>
+                    <td>${srvName}</td>
+                    <td>${starsHtml}</td>
+                    <td style="font-style: italic; color: #d1d5db;">${rev.comentario ? '"' + rev.comentario + '"' : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+        } catch (err) {
+            console.error("Error cargando reseñas:", err);
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ef4444; padding: 20px;">Error al cargar las reseñas.</td></tr>';
+        }
+    };
 
     // --- Motor de Simulación Videojuego ---
     let simCars = new Map();
