@@ -19,9 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardView = document.getElementById('dashboard-view');
     const metricsView = document.getElementById('metrics-view');
     const reservasView = document.getElementById('reservas-view');
+    const camaraView = document.getElementById('camara-view');
     
     navButtons.forEach(btn => {
-        if (btn.id === 'btn-config') return; // Config is handled separately
+        if (btn.id === 'btn-config' || btn.id === 'btn-whatsapp') return;
         
         btn.addEventListener('click', () => {
             // Remove active from all
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dashboardView) dashboardView.style.display = 'none';
             if (metricsView) metricsView.style.display = 'none';
             if (reservasView) reservasView.style.display = 'none';
+            if (camaraView) camaraView.style.display = 'none';
 
             if (spanText === 'Métricas') {
                 if (metricsView) {
@@ -44,6 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (spanText === 'Reservas') {
                 if (reservasView) {
                     reservasView.style.display = 'block';
+                }
+            } else if (spanText === 'Cámara de Ingreso') {
+                if (camaraView) {
+                    camaraView.style.display = 'block';
                 }
             } else if (spanText === 'Panel Principal') {
                 if (dashboardView) dashboardView.style.display = 'flex';
@@ -1047,6 +1053,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // ==========================================
+    // SISTEMA DE CÁMARA LPR (Webcam)
+    // ==========================================
+    const btnStartCamera = document.getElementById('btn-start-camera');
+    const videoElement = document.getElementById('camera-stream');
+    const cameraLoading = document.getElementById('camera-loading');
+    const cameraOverlay = document.getElementById('camera-overlay');
+
+    if (btnStartCamera) {
+        btnStartCamera.addEventListener('click', async () => {
+            try {
+                btnStartCamera.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Conectando...";
+                
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("El navegador no soporta el acceso a la cámara. Si estás en celular, asegúrate de usar HTTPS o acceder vía localhost.");
+                }
+
+                // Solicitar permisos y acceso a la cámara (idealmente trasera, pero acepta cualquiera)
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { ideal: "environment" } } 
+                });
+                
+                videoElement.srcObject = stream;
+                
+                // Mostrar video y ocultar loading
+                videoElement.onloadedmetadata = () => {
+                    videoElement.style.display = 'block';
+                    cameraOverlay.style.display = 'block';
+                    cameraLoading.style.display = 'none';
+                };
+
+            } catch (err) {
+                console.error("Error al acceder a la cámara:", err);
+                let msg = "No se pudo acceder a la cámara.";
+                if (err.name === "NotAllowedError") msg = "Permiso denegado. Haz clic en el ícono del candado en la barra de direcciones y permite la cámara.";
+                else if (err.name === "NotFoundError") msg = "No se encontró ninguna cámara conectada al equipo.";
+                else if (err.message) msg = err.message;
+                
+                alert(msg);
+                btnStartCamera.innerHTML = "<i class='bx bx-error'></i> Reintentar";
+            }
+        });
+    }
+
+    // ==========================================
     // SISTEMA DE RESERVAS (TIEMPO REAL)
     // ==========================================
     let pendingReservations = [];
@@ -1109,10 +1159,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         .eq('id', reservaId);
                     
                     if (!error) {
-                        // Ingresar el auto a la pista
+                        // 1. Cambiar a la vista del Dashboard para que las coordenadas (getBoundingClientRect) no sean 0
+                        const navBtns = document.querySelectorAll('.nav-btn');
+                        navBtns.forEach(b => b.classList.remove('active'));
+                        const btnDashboard = Array.from(navBtns).find(b => b.textContent.includes('Panel Principal'));
+                        if (btnDashboard) btnDashboard.classList.add('active');
+                        
+                        const reservasView = document.getElementById('reservas-view');
+                        const dashboardView = document.getElementById('dashboard-view');
+                        if (reservasView) reservasView.style.display = 'none';
+                        if (dashboardView) dashboardView.style.display = 'flex';
+
+                        // 2. Ingresar el auto a la pista (ahora con dimensiones reales)
                         ingresarAuto(reserva.tipo_lavado, reserva.patente);
                         
-                        // Quitar de la lista local
+                        // 3. Quitar de la lista local
                         pendingReservations = pendingReservations.filter(r => r.id !== reservaId);
                         renderReservations();
                     } else {

@@ -32,12 +32,8 @@
                     <span>Panel Principal</span>
                 </button>
                 <button class="nav-btn">
-                    <i class='bx bx-map-alt'></i>
-                    <span>Planos</span>
-                </button>
-                <button class="nav-btn">
-                    <i class='bx bx-car'></i>
-                    <span>Vehículos</span>
+                    <i class='bx bx-camera'></i>
+                    <span>Cámara de Ingreso</span>
                 </button>
                 <button class="nav-btn">
                     <i class='bx bx-time-five'></i>
@@ -221,6 +217,42 @@
                         <!-- Las reservas en tiempo real se cargarán aquí -->
                     </tbody>
                 </table>
+            </div>
+        </main>
+
+        <!-- Vista de Cámara de Ingreso -->
+        <main class="main-content" id="camara-view" style="display: none;">
+            <div class="metrics-header">
+                <h2>Cámara de Ingreso LPR</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 70vh; background: #0a0a0a; border-radius: 12px; border: 2px dashed #222; box-shadow: inset 0 0 50px rgba(0,0,0,0.5); overflow: hidden; position: relative;">
+                
+                <!-- El video donde se mostrará la cámara -->
+                <video id="camera-stream" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; display: none;"></video>
+                
+                <!-- Overlay de reconocimiento -->
+                <div id="camera-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; border: 4px solid rgba(255, 215, 0, 0.3);">
+                    <!-- Mira tipo escáner -->
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 300px; border: 3px solid #ffd700; border-radius: 12px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);">
+                        <div style="position: absolute; top: -16px; left: 16px; background: #0a0a0a; color: #ffd700; padding: 0 10px; font-size: 1.1rem; font-weight: bold; letter-spacing: 1px;">ZONA DE ESCANEO LPR</div>
+                        <!-- Línea de escaneo animada -->
+                        <div style="width: 100%; height: 3px; background: rgba(255, 215, 0, 0.9); box-shadow: 0 0 10px rgba(255, 215, 0, 1); position: absolute; top: 0; animation: scan 2.5s ease-in-out infinite alternate;"></div>
+                    </div>
+                </div>
+
+                <!-- Estado Inicial / Cargando -->
+                <div id="camera-loading" style="display: flex; flex-direction: column; align-items: center;">
+                    <i class='bx bx-cctv' style="font-size: 6rem; color: #333; margin-bottom: 20px;"></i>
+                    <p style="color: #9ca3af; font-size: 1.5rem; font-weight: bold; letter-spacing: 1px;">Cámara Desconectada</p>
+                    <p style="color: #6b7280; margin-top: 5px;">(Sistema de Reconocimiento Automático de Patentes)</p>
+                    <button class="btn btn-primary" id="btn-start-camera" style="margin-top: 30px; font-size: 1.2rem; padding: 12px 24px; display: flex; align-items: center; gap: 8px;">
+                        <i class='bx bx-power-off'></i> Encender Cámara
+                    </button>
+                </div>
+
+                <style>
+                    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+                </style>
             </div>
         </main>
     </div>
