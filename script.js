@@ -1,3 +1,100 @@
+// ============================================================
+// LOGIN LOGIC — Admin Panel
+// Credenciales: DNI 25177943 / Clave 123456 (developer)
+// ============================================================
+const ADMIN_CREDENTIALS = [
+    { nombre: 'developer', dni: '25177943', clave: '123456' }
+];
+
+function handleLogin() {
+    const dniInput  = document.getElementById('login-dni');
+    const passInput = document.getElementById('login-pass');
+    const errorDiv  = document.getElementById('login-error');
+    const btn       = document.getElementById('login-btn');
+    const btnText   = document.getElementById('login-btn-text');
+    const btnLoader = document.getElementById('login-btn-loader');
+
+    const dni   = dniInput.value.trim();
+    const clave = passInput.value.trim();
+
+    // Ocultar error previo
+    errorDiv.style.display = 'none';
+
+    // Validar campos
+    if (!dni || !clave) {
+        errorDiv.style.display = 'flex';
+        // Re-trigger animation
+        errorDiv.style.animation = 'none';
+        errorDiv.offsetHeight;
+        errorDiv.style.animation = '';
+        return;
+    }
+
+    // Mostrar loader
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'flex';
+
+    // Simular pequeño delay de verificación
+    setTimeout(() => {
+        const match = ADMIN_CREDENTIALS.find(u => u.dni === dni && u.clave === clave);
+
+        if (match) {
+            // Limpiar campos inmediatamente
+            dniInput.value = '';
+            passInput.value = '';
+
+            // Transición al dashboard
+            const loginScreen = document.getElementById('login-screen');
+            const dashboard   = document.getElementById('main-dashboard');
+
+            loginScreen.classList.add('fade-out');
+            setTimeout(() => {
+                loginScreen.style.display = 'none';
+                dashboard.style.display  = 'flex';
+            }, 500);
+        } else {
+            // Credenciales incorrectas
+            btn.disabled = false;
+            btnText.style.display = 'flex';
+            btnLoader.style.display = 'none';
+
+            // Limpiar campos en error también
+            passInput.value = '';
+            passInput.focus();
+
+            errorDiv.style.display = 'flex';
+            errorDiv.style.animation = 'none';
+            errorDiv.offsetHeight;
+            errorDiv.style.animation = 'shake 0.4s ease';
+        }
+    }, 600);
+}
+
+function toggleLoginPass(btn) {
+    const input = btn.previousElementSibling;
+    const icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bx bx-hide';
+    } else {
+        input.type = 'password';
+        icon.className = 'bx bx-show';
+    }
+}
+
+// Permitir Enter para iniciar sesión
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        const loginScreen = document.getElementById('login-screen');
+        if (loginScreen && loginScreen.style.display !== 'none' && !loginScreen.classList.contains('fade-out')) {
+            handleLogin();
+        }
+    }
+});
+
+// ============================================================
+
 document.addEventListener('DOMContentLoaded', () => {
     // === SUPABASE INIT ===
     const SUPABASE_URL = 'https://ojalzcfjrlkkyyqvihvc.supabase.co';

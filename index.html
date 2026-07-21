@@ -12,7 +12,49 @@
 </head>
 <body>
 
-    <div class="dashboard-container">
+    <!-- ===== PANTALLA DE LOGIN ===== -->
+    <div id="login-screen">
+        <div class="login-bg-glow"></div>
+        <div class="login-card">
+            <div class="login-logo-wrap">
+                <img src="logo.jpg" alt="L1deres" class="login-logo" onerror="this.style.display='none'">
+            </div>
+            <div class="login-header">
+                <h1 class="login-title">Panel Administrativo</h1>
+                <p class="login-subtitle">Ingresá tus credenciales para continuar</p>
+            </div>
+
+            <div class="login-form">
+                <div class="login-field">
+                    <label for="login-dni"><i class='bx bx-id-card'></i> DNI</label>
+                    <input type="number" id="login-dni" placeholder="Ingresá tu DNI" autocomplete="off" maxlength="10">
+                </div>
+                <div class="login-field">
+                    <label for="login-pass"><i class='bx bx-lock-alt'></i> Clave</label>
+                    <div class="login-pass-wrap">
+                        <input type="password" id="login-pass" placeholder="••••••" autocomplete="off" maxlength="6">
+                        <button class="toggle-pass" type="button" onclick="toggleLoginPass(this)" tabindex="-1">
+                            <i class='bx bx-show'></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="login-error" class="login-error" style="display:none;">
+                    <i class='bx bx-error-circle'></i> DNI o clave incorrectos
+                </div>
+
+                <button id="login-btn" onclick="handleLogin()">
+                    <span id="login-btn-text"><i class='bx bx-log-in-circle'></i> Ingresar</span>
+                    <span id="login-btn-loader" style="display:none;"><i class='bx bx-loader-alt bx-spin'></i> Verificando...</span>
+                </button>
+            </div>
+
+            <p class="login-footer-text">© 2025 Aura · L1deres Lavado Automático</p>
+        </div>
+    </div>
+    <!-- ===== FIN LOGIN ===== -->
+
+    <div class="dashboard-container" id="main-dashboard" style="display:none;">
         
         <!-- Menú Lateral -->
         <aside class="sidebar">
