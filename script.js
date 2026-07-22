@@ -223,8 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('precioCompleto', window.APP_CONFIG.precioCompleto);
             
             // Sincronizar con Supabase
-            if (window.supabase) {
-                window.supabase.from('configuracion').upsert({
+            if (window.supabaseClient) {
+                window.supabaseClient.from('configuracion').upsert({
                     id: 1,
                     whatsapp_number: window.APP_CONFIG.whatsapp,
                     tiempo_lavado: window.APP_CONFIG.tiempoLavado,
@@ -473,11 +473,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.deleteReview = async function(id) {
-        if (!window.supabase) return;
+        if (!window.supabaseClient) return;
         if (!confirm('¿Estás seguro que deseas borrar esta reseña?')) return;
         
         try {
-            const { error } = await window.supabase
+            const { error } = await window.supabaseClient
                 .from('reservas_pendientes')
                 .update({ rating: null, comentario: null })
                 .eq('id', id);
@@ -756,15 +756,15 @@ document.addEventListener('DOMContentLoaded', () => {
             checkMovement();
             
             // --- LOGICA DE PROMOCIONES ---
-            if (window.supabase) {
+            if (window.supabaseClient) {
                 try {
-                    const { count } = await window.supabase
+                    const { count } = await window.supabaseClient
                         .from('reservas_pendientes')
                         .select('*', { count: 'exact', head: true })
                         .eq('patente', patenteFinal)
                         .eq('estado', 'completado');
                     
-                    const { data: promos } = await window.supabase
+                    const { data: promos } = await window.supabaseClient
                         .from('promociones')
                         .select('*')
                         .eq('activa', true)
