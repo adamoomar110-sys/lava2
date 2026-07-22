@@ -318,7 +318,150 @@ function initClientTrack() {
         }
     }
 
+    // Calcular paths de pistas Scalextric en el cliente
+    setTimeout(() => {
+        updateClientTracks();
+    }, 400);
+
     initClientSponsors();
+    initClientCarSync();
+}
+
+function updateClientTracks() {
+    const canvas = document.getElementById('client-canvas-area');
+    if (!canvas) return;
+
+    function getBoxCenter(boxNum) {
+        const box = document.querySelector(`#client-canvas-grid .grid-box[data-box-number="${boxNum}"]`);
+        if (!box) return null;
+        const boxRect = box.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        return {
+            x: boxRect.left - canvasRect.left + boxRect.width / 2,
+            y: boxRect.top - canvasRect.top + boxRect.height / 2
+        };
+    }
+
+    const c11 = getBoxCenter(11), c12 = getBoxCenter(12);
+    const c29 = getBoxCenter(29), c30 = getBoxCenter(30);
+    const c3 = getBoxCenter(3), c9 = getBoxCenter(9);
+    const c4 = getBoxCenter(4);
+    const c25 = getBoxCenter(25), c7 = getBoxCenter(7);
+
+    if (c11 && c12 && c29 && c30 && c3 && c9 && c4 && c25 && c7) {
+        // Pista Interior
+        const dInterior = `M ${c12.x} ${c12.y + 120} L ${c12.x} ${c12.y} L ${c3.x} ${c3.y} L ${c9.x} ${c9.y} L ${c25.x} ${c25.y} L ${c7.x} ${c7.y}`;
+        ['client-base-interior', 'client-rails-interior', 'client-slot-interior', 'client-track-interior'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('d', dInterior);
+        });
+
+        // Pista Lavado
+        const dLavado = `M ${c11.x} ${c11.y + 120} L ${c11.x} ${c11.y} L ${c4.x} ${c4.y} L ${c25.x} ${c25.y} L ${c7.x} ${c7.y}`;
+        ['client-base-lavado', 'client-rails-lavado', 'client-slot-lavado', 'client-track-lavado'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('d', dLavado);
+        });
+    }
+}
+
+// Sincronizar vehículos en vivo con Supabase
+let clientCarSprites = new Map();
+
+async function fetchClientLiveState() {
+    if (!supabaseClient) return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('reservas_pendientes')
+            .select('*')
+            .in('estado', ['ingresado', 'lavando', 'secando']);
+
+        if (error || !data) return;
+
+        const canvas = document.getElementById('client-canvas-area');
+        if (!canvas) return;
+
+        const activeIds = new Set();
+        let totalEta = 0;
+
+        data.forEach(res => {
+            activeIds.add(res.id.toString());
+
+            // Determinar caja destino
+            let boxNum = 11;
+            if (res.estado === 'ingresado') boxNum = 11;
+            else if (res.estado === 'lavando') boxNum = 4;
+            else if (res.estado === 'secando') boxNum = 3;
+
+            const box = document.querySelector(`#client-canvas-grid .grid-box[data-box-number="${boxNum}"]`);
+            if (box) {
+                const boxRect = box.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+                const targetX = boxRect.left - canvasRect.left + boxRect.width / 2 - 16;
+                const targetY = boxRect.top - canvasRect.top + boxRect.height / 2 - 16;
+
+                let car = clientCarSprites.get(res.id.toString());
+                if (!car) {
+                    car = document.createElement('div');
+                    car.className = 'car-wrapper';
+                    car.dataset.id = res.id;
+                    car.style.left = `${targetX}px`;
+                    car.style.top = `${targetY + 80}px`;
+
+                    const img = document.createElement('img');
+                    img.src = '../f1_car_top_down.png';
+                    img.className = 'auto-icon';
+
+                    car.appendChild(img);
+                    canvas.appendChild(car);
+                    clientCarSprites.set(res.id.toString(), car);
+                }
+
+                // Animación suave hacia el box (sin cartel de patente)
+                setTimeout(() => {
+                    car.style.left = `${targetX}px`;
+                    car.style.top = `${targetY}px`;
+                }, 50);
+            }
+        });
+
+        // Limpiar autos que salieron
+        clientCarSprites.forEach((car, id) => {
+            if (!activeIds.has(id)) {
+                car.style.left = '110%';
+                car.style.opacity = '0';
+                setTimeout(() => {
+                    if (car.parentNode) car.remove();
+                    clientCarSprites.delete(id);
+                }, 800);
+            }
+        });
+
+        // Actualizar demora en el badge
+        const count = data.length;
+        const timeEl = document.getElementById('client-status-time');
+        const badgeEl = document.getElementById('client-status-badge');
+        if (timeEl && badgeEl) {
+            if (count === 0) {
+                timeEl.textContent = '00:00';
+                badgeEl.className = 'status-badge badge-libre';
+                badgeEl.textContent = 'SIN DEMORA';
+            } else {
+                const mins = count * 5;
+                timeEl.textContent = `${mins.toString().padStart(2, '0')}:00`;
+                badgeEl.className = count > 3 ? 'status-badge badge-alta' : 'status-badge badge-normal';
+                badgeEl.textContent = `${count} EN ESPERA`;
+            }
+        }
+
+    } catch (e) {
+        console.error('Error sync cliente track:', e);
+    }
+}
+
+function initClientCarSync() {
+    fetchClientLiveState();
+    setInterval(fetchClientLiveState, 4000);
 }
 
 const DEFAULT_CLIENT_SPONSORS = [
@@ -346,4 +489,7 @@ function initClientSponsors() {
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initClientTrack, 300);
+    window.addEventListener('resize', () => {
+        setTimeout(updateClientTracks, 200);
+    });
 });
