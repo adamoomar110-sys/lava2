@@ -97,6 +97,10 @@
                     <i class='bx bx-gift'></i>
                     <span>Promociones</span>
                 </button>
+                <button class="nav-btn">
+                    <i class='bx bx-tv'></i>
+                    <span>Publicidad & Sponsors</span>
+                </button>
                 <button class="nav-btn" id="btn-whatsapp" onclick="window.open('https://web.whatsapp.com/', '_blank')">
                     <i class='bx bxl-whatsapp' style="color: #25D366;"></i>
                     <span>WhatsApp</span>
@@ -184,6 +188,30 @@
                 <!-- Aquí se generan los 48 boxes (8x6) -->
                 <div class="canvas-grid" id="canvas-grid" style="position:relative; z-index:1;">
                     <!-- Los boxes se agregarán con Javascript -->
+                </div>
+
+                <!-- Pantalla Digital LED de Publicidad / Sponsors (Área Central) -->
+                <div id="sponsor-screen-container" class="sponsor-screen-container">
+                    <div class="sponsor-screen-frame">
+                        <div class="screen-header">
+                            <span class="screen-badge"><i class='bx bx-broadcast bx-flashing'></i> SPONSORS OFICIALES</span>
+                            <div class="screen-controls-mini">
+                                <button onclick="prevSponsor()" title="Anterior"><i class='bx bx-chevron-left'></i></button>
+                                <button id="btn-toggle-play" onclick="toggleSponsorPlay()" title="Pausar/Reproducir"><i class='bx bx-pause'></i></button>
+                                <button onclick="nextSponsor()" title="Siguiente"><i class='bx bx-chevron-right'></i></button>
+                            </div>
+                        </div>
+                        <div class="screen-media-wrapper" id="screen-media-wrapper">
+                            <!-- Contenido dinámico de imagen o video -->
+                        </div>
+                        <div class="screen-footer">
+                            <div class="sponsor-info">
+                                <div class="sponsor-title" id="sponsor-title">Cargando anuncios...</div>
+                                <div class="sponsor-subtitle" id="sponsor-subtitle">Aura Racing Telemetry</div>
+                            </div>
+                            <div class="sponsor-progress-bar"><div class="sponsor-progress-fill" id="sponsor-progress"></div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -404,8 +432,66 @@
         </main>
     </div>
 
+    <!-- Vista de Gestión de Publicidad & Sponsors -->
+    <main class="main-content" id="sponsors-view" style="display: none;">
+        <div class="metrics-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h2>Gestión de Publicidad & Sponsors</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Administrá las imágenes y videos que se proyectan en la pantalla central del circuito.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddSponsorModal()" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px;">
+                <i class='bx bx-plus-circle' style="font-size: 1.2rem;"></i> Nuevo Anuncio / Sponsor
+            </button>
+        </div>
+
+        <div class="sponsors-grid" id="sponsors-list-container">
+            <!-- Tarjetas de publicidad administrables generadas por JavaScript -->
+        </div>
+    </main>
+
+    <!-- Modal Nuevo Sponsor / Publicidad -->
+    <div id="modal-sponsor" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class='bx bx-tv'></i> Agregar Publicidad / Sponsor</h3>
+                <button class="modal-close" onclick="closeAddSponsorModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-sponsor" onsubmit="saveSponsor(event)">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Título del Anuncio / Sponsor</label>
+                        <input type="text" id="sponsor-input-title" placeholder="Ej: Red Bull Racing" class="price-input" style="width: 100%;" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Tipo de Contenido</label>
+                        <select id="sponsor-input-type" class="price-input" style="width: 100%; background: #0f172a; color: white;" required>
+                            <option value="image">Imagen (URL o Banner)</option>
+                            <option value="video">Video (MP4 / WebM / Direct Link)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">URL del Recurso (Imagen o Video)</label>
+                        <input type="url" id="sponsor-input-url" placeholder="https://ejemplo.com/video.mp4 o imagen.jpg" class="price-input" style="width: 100%;" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Duración en Pantalla (Segundos)</label>
+                        <input type="number" id="sponsor-input-duration" min="3" max="60" value="7" class="price-input" style="width: 100%;" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Eslogan / Descripción (Opcional)</label>
+                        <input type="text" id="sponsor-input-subtitle" placeholder="Ej: Rendimiento de alta velocidad" class="price-input" style="width: 100%;">
+                    </div>
+                    <div class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddSponsorModal()" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">Guardar Anuncio</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js?v=16"></script>
+    <script src="script.js?v=17"></script>
 </body>
 </html>

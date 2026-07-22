@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientReviewsView = document.getElementById('client-reviews-view');
     const promocionesView = document.getElementById('promociones-view');
     const configView = document.getElementById('config-view');
+    const sponsorsView = document.getElementById('sponsors-view');
     
     navButtons.forEach(btn => {
         if (btn.id === 'btn-whatsapp') return;
@@ -140,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (clientReviewsView) clientReviewsView.style.display = 'none';
             if (promocionesView) promocionesView.style.display = 'none';
             if (configView) configView.style.display = 'none';
+            if (sponsorsView) sponsorsView.style.display = 'none';
 
             if (spanText === 'Métricas') {
                 if (metricsView) {
@@ -163,6 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (promocionesView) {
                     promocionesView.style.display = 'block';
                     if (window.fetchPromociones) window.fetchPromociones();
+                }
+            } else if (spanText === 'Publicidad & Sponsors') {
+                if (sponsorsView) {
+                    sponsorsView.style.display = 'block';
+                    if (window.renderSponsorManager) window.renderSponsorManager();
                 }
             } else if (spanText === 'Configuración') {
                 if (configView) {
@@ -1589,5 +1596,256 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("No se pudo actualizar el estado de la promoción.");
         }
     };
+
+    // ==========================================
+    // SISTEMA DE PUBLICIDAD & SPONSORS (PANTALLA LED)
+    // ==========================================
+    const DEFAULT_SPONSORS = [
+        {
+            id: 'sp-1',
+            title: 'Shell Helix Ultra',
+            subtitle: 'Máximo rendimiento y protección de motor F1',
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80',
+            duration: 7
+        },
+        {
+            id: 'sp-2',
+            title: 'Pirelli P Zero',
+            subtitle: 'Neumáticos de ultra alto rendimiento deportivo',
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1200&q=80',
+            duration: 7
+        },
+        {
+            id: 'sp-3',
+            title: 'Red Bull Racing',
+            subtitle: 'Gives You Wings - Tecnología de Competición',
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=80',
+            duration: 8
+        },
+        {
+            id: 'sp-4',
+            title: 'Mobil 1 Synthetic Oil',
+            subtitle: 'Lubricante sintético oficial para motores de carrera',
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80',
+            duration: 7
+        },
+        {
+            id: 'sp-5',
+            title: 'Brembo Racing Brakes',
+            subtitle: 'Frenado de precisión extrema de alta temperatura',
+            type: 'image',
+            url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1200&q=80',
+            duration: 7
+        }
+    ];
+
+    let sponsorsList = JSON.parse(localStorage.getItem('aura_sponsors')) || DEFAULT_SPONSORS;
+    let currentSponsorIndex = 0;
+    let sponsorTimer = null;
+    let sponsorProgressTimer = null;
+    let sponsorIsPlaying = true;
+
+    function getSponsors() {
+        return sponsorsList && sponsorsList.length > 0 ? sponsorsList : DEFAULT_SPONSORS;
+    }
+
+    function saveSponsorsState() {
+        localStorage.setItem('aura_sponsors', JSON.stringify(sponsorsList));
+    }
+
+    window.renderSponsorSlide = function() {
+        const wrapper = document.getElementById('screen-media-wrapper');
+        const titleEl = document.getElementById('sponsor-title');
+        const subEl = document.getElementById('sponsor-subtitle');
+        
+        if (!wrapper) return;
+        const sponsors = getSponsors();
+        if (sponsors.length === 0) return;
+        
+        if (currentSponsorIndex >= sponsors.length) currentSponsorIndex = 0;
+        const current = sponsors[currentSponsorIndex];
+
+        if (titleEl) titleEl.textContent = current.title;
+        if (subEl) subEl.textContent = current.subtitle || 'Sponsor Oficial';
+
+        wrapper.innerHTML = '';
+        if (current.type === 'video') {
+            const video = document.createElement('video');
+            video.src = current.url;
+            video.autoplay = true;
+            video.muted = true;
+            video.loop = false;
+            video.playsInline = true;
+            video.className = 'screen-media-item';
+            video.onended = () => { window.nextSponsor(); };
+            video.onerror = () => {
+                wrapper.innerHTML = `<img src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80" class="screen-media-item">`;
+            };
+            wrapper.appendChild(video);
+        } else {
+            const img = document.createElement('img');
+            img.src = current.url;
+            img.alt = current.title;
+            img.className = 'screen-media-item';
+            img.onerror = () => {
+                img.src = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80';
+            };
+            wrapper.appendChild(img);
+        }
+
+        startSponsorProgress(current.duration || 7);
+    };
+
+    function startSponsorProgress(durationSec) {
+        clearInterval(sponsorProgressTimer);
+        clearTimeout(sponsorTimer);
+        
+        const progressEl = document.getElementById('sponsor-progress');
+        if (!progressEl) return;
+        
+        progressEl.style.width = '0%';
+        if (!sponsorIsPlaying) return;
+
+        let startTime = Date.now();
+        const durationMs = durationSec * 1000;
+
+        sponsorProgressTimer = setInterval(() => {
+            if (!sponsorIsPlaying) return;
+            const elapsed = Date.now() - startTime;
+            const pct = Math.min(100, (elapsed / durationMs) * 100);
+            progressEl.style.width = pct + '%';
+            if (pct >= 100) {
+                clearInterval(sponsorProgressTimer);
+            }
+        }, 50);
+
+        sponsorTimer = setTimeout(() => {
+            if (sponsorIsPlaying) {
+                window.nextSponsor();
+            }
+        }, durationMs);
+    }
+
+    window.nextSponsor = function() {
+        const sponsors = getSponsors();
+        currentSponsorIndex = (currentSponsorIndex + 1) % sponsors.length;
+        window.renderSponsorSlide();
+    };
+
+    window.prevSponsor = function() {
+        const sponsors = getSponsors();
+        currentSponsorIndex = (currentSponsorIndex - 1 + sponsors.length) % sponsors.length;
+        window.renderSponsorSlide();
+    };
+
+    window.toggleSponsorPlay = function() {
+        sponsorIsPlaying = !sponsorIsPlaying;
+        const btn = document.getElementById('btn-toggle-play');
+        if (btn) {
+            btn.innerHTML = sponsorIsPlaying ? "<i class='bx bx-pause'></i>" : "<i class='bx bx-play'></i>";
+        }
+        if (sponsorIsPlaying) {
+            const sponsors = getSponsors();
+            startSponsorProgress(sponsors[currentSponsorIndex]?.duration || 7);
+        } else {
+            clearInterval(sponsorProgressTimer);
+            clearTimeout(sponsorTimer);
+        }
+    };
+
+    window.openAddSponsorModal = function() {
+        const modal = document.getElementById('modal-sponsor');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeAddSponsorModal = function() {
+        const modal = document.getElementById('modal-sponsor');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.saveSponsor = function(e) {
+        e.preventDefault();
+        const title = document.getElementById('sponsor-input-title').value.trim();
+        const type = document.getElementById('sponsor-input-type').value;
+        const url = document.getElementById('sponsor-input-url').value.trim();
+        const duration = parseInt(document.getElementById('sponsor-input-duration').value) || 7;
+        const subtitle = document.getElementById('sponsor-input-subtitle').value.trim();
+
+        if (!title || !url) return;
+
+        const newSponsor = {
+            id: 'sp-' + Date.now(),
+            title,
+            subtitle: subtitle || 'Sponsor Oficial',
+            type,
+            url,
+            duration
+        };
+
+        sponsorsList.unshift(newSponsor);
+        saveSponsorsState();
+        window.closeAddSponsorModal();
+        document.getElementById('form-sponsor').reset();
+        window.renderSponsorManager();
+        window.renderSponsorSlide();
+        alert('¡Anuncio guardado correctamente!');
+    };
+
+    window.deleteSponsor = function(id) {
+        if (!confirm('¿Estás seguro que deseas eliminar este anuncio?')) return;
+        sponsorsList = sponsorsList.filter(s => s.id !== id);
+        saveSponsorsState();
+        window.renderSponsorManager();
+        window.renderSponsorSlide();
+    };
+
+    window.renderSponsorManager = function() {
+        const container = document.getElementById('sponsors-list-container');
+        if (!container) return;
+
+        const sponsors = getSponsors();
+        container.innerHTML = '';
+
+        sponsors.forEach(sp => {
+            const card = document.createElement('div');
+            card.className = 'sponsor-card';
+            
+            const mediaContent = sp.type === 'video' 
+                ? `<video src="${sp.url}" muted></video>` 
+                : `<img src="${sp.url}" alt="${sp.title}" onerror="this.src='https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80'">`;
+
+            const iconType = sp.type === 'video' ? "<i class='bx bx-video'></i> Video" : "<i class='bx bx-image'></i> Imagen";
+
+            card.innerHTML = `
+                <div class="sponsor-card-media">
+                    ${mediaContent}
+                    <div class="sponsor-card-type-badge">${iconType}</div>
+                </div>
+                <div class="sponsor-card-body">
+                    <div>
+                        <div class="sponsor-card-title">${sp.title}</div>
+                        <div class="sponsor-card-sub">${sp.subtitle || '-'}</div>
+                    </div>
+                    <div class="sponsor-card-footer">
+                        <span><i class='bx bx-time'></i> ${sp.duration} seg</span>
+                        <button onclick="deleteSponsor('${sp.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem;" title="Eliminar Sponsor">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    };
+
+    // Inicializar reproductor de sponsors al cargar
+    setTimeout(() => {
+        window.renderSponsorSlide();
+        window.renderSponsorManager();
+    }, 400);
 
 });
