@@ -370,3 +370,101 @@ input:focus {
     from { opacity: 0; transform: translateX(50px); }
     to { opacity: 1; transform: translateX(0); }
 }
+
+/* ============================================================
+   PISTA INTERACTIVA EN VIVO Y WIDGET DE DEMORA (CLIENTE)
+   ============================================================ */
+
+/* Ocultar patentes de autos en la vista del cliente por privacidad */
+.car-plate {
+    display: none !important;
+}
+
+.live-track-container {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    margin: 15px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    border: 1.5px solid rgba(225, 6, 0, 0.4);
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.2);
+}
+
+.client-canvas-area {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: #111;
+    background-image: 
+      repeating-linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+      repeating-linear-gradient(45deg, #1a1a1a 25%, #111 25%, #111 75%, #1a1a1a 75%, #1a1a1a);
+    background-position: 0 0, 15px 15px;
+    background-size: 30px 30px;
+}
+
+/* Widget de Demora Posicionado sobre INTERIOR */
+.client-status-board {
+    position: absolute;
+    top: 6px;
+    left: 31%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1.5px solid #334155;
+    border-radius: 10px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+}
+
+.client-status-board .status-title {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+
+.client-status-board .status-time {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #fff;
+    font-family: 'Racing Sans One', sans-serif;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.client-status-board .status-badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.badge-libre {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid #22c55e;
+}
+
+.badge-normal {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid #0ea5e9;
+}
+
+.badge-alta {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
+}
+
+.badge-critica {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid #ef4444;
+}

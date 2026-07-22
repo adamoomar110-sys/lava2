@@ -30,8 +30,76 @@
             <div class="card fade-in">
                 <h1 class="racing-font">BIENVENIDO</h1>
                 <p>Al sistema de lavado automático de última generación de <strong>L1deres</strong>.</p>
-                <div class="car-graphic">
-                    <img src="../f1_car_side.png" alt="F1 Car" onerror="this.style.display='none'">
+                <div class="live-track-container" id="live-track-container">
+                    <!-- Status Board encima de la columna INTERIOR -->
+                    <div id="client-status-board" class="status-board-top client-status-board">
+                        <div class="status-info">
+                            <div class="status-title">DEMORA ESTIMADA</div>
+                            <div class="status-time" id="client-status-time">00:00</div>
+                        </div>
+                        <div class="status-badge badge-libre" id="client-status-badge">SIN DEMORA</div>
+                    </div>
+
+                    <div class="canvas-area client-canvas-area" id="client-canvas-area">
+                        <!-- Scalextric Tracks -->
+                        <svg width="100%" height="100%" class="scalextric-svg" style="position:absolute; top:0; left:0; z-index:0; pointer-events:none;">
+                            <defs>
+                                <linearGradient id="clientNeonAzulAmarillo" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#38bdf8" />
+                                    <stop offset="100%" stop-color="#fde047" />
+                                </linearGradient>
+                                <linearGradient id="clientNeonMarronVioleta" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#d97706" />
+                                    <stop offset="100%" stop-color="#8b5cf6" />
+                                </linearGradient>
+                                <filter id="clientGlowAzul">
+                                    <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                                <filter id="clientGlowVioleta">
+                                    <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                            </defs>
+                            
+                            <path id="client-base-interior" d="" fill="none" class="track-base" />
+                            <path id="client-rails-interior" d="" fill="none" stroke="#9ca3af" stroke-width="16" />
+                            <path id="client-slot-interior" d="" fill="none" stroke="#111" stroke-width="6" />
+                            <path id="client-track-interior" d="" fill="none" stroke="url(#clientNeonMarronVioleta)" stroke-width="8" filter="url(#clientGlowVioleta)" class="track-line" style="opacity: 0.6;"/>
+                            
+                            <path id="client-base-lavado" d="" fill="none" class="track-base" />
+                            <path id="client-rails-lavado" d="" fill="none" stroke="#9ca3af" stroke-width="16" />
+                            <path id="client-slot-lavado" d="" fill="none" stroke="#111" stroke-width="6" />
+                            <path id="client-track-lavado" d="" fill="none" stroke="url(#clientNeonAzulAmarillo)" stroke-width="8" filter="url(#clientGlowAzul)" class="track-line" style="opacity: 0.6;"/>
+                        </svg>
+                        
+                        <div class="canvas-grid" id="client-canvas-grid" style="position:relative; z-index:1;">
+                            <!-- Boxes -->
+                        </div>
+
+                        <!-- Pantalla Digital LED de Publicidad / Sponsors -->
+                        <div id="client-sponsor-screen-container" class="sponsor-screen-container">
+                            <div class="sponsor-screen-frame">
+                                <div class="screen-header">
+                                    <span class="screen-badge"><i class='bx bx-broadcast bx-flashing'></i> SPONSORS OFICIALES</span>
+                                </div>
+                                <div class="screen-media-wrapper" id="client-screen-media-wrapper">
+                                </div>
+                                <div class="screen-footer">
+                                    <div class="sponsor-info">
+                                        <div class="sponsor-title" id="client-sponsor-title">L1deres AutoWash</div>
+                                    </div>
+                                    <div class="sponsor-progress-bar"><div class="sponsor-progress-fill" id="client-sponsor-progress"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <button class="btn btn-primary" onclick="nextScreen('screen-plate')">
                     START ENGINE <i class='bx bx-right-arrow-alt'></i>

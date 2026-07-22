@@ -269,3 +269,81 @@ function contactWhatsApp() {
         window.open(`https://wa.me/${number}?text=${message}`, '_blank');
     }
 }
+
+// ============================================================
+// SIMULADOR DE CIRCUITO EN VIVO PARA CLIENTE (SIN PATENTES)
+// ============================================================
+function initClientTrack() {
+    const grid = document.getElementById('client-canvas-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    const totalBoxes = 48;
+
+    const titles = [
+        { name: 'TERMINADO', col: 1 },
+        { name: 'INTERIOR', col: 3 },
+        { name: 'LAVADO', col: 4 },
+        { name: 'ESPERA', col: 5 }
+    ];
+
+    titles.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'zone-title';
+        div.textContent = t.name;
+        div.style.gridRow = '1';
+        div.style.gridColumn = t.col;
+        if (t.name === 'ESPERA') div.style.gridColumn = '5 / span 2';
+        grid.appendChild(div);
+    });
+
+    const textReplacements = {
+        25: '1', 19: '2', 13: '3', 7: '4',
+        11: '1', 12: '2', 17: '3', 18: '4', 23: '5', 24: '6', 29: '7', 30: '8',
+        4: '1', 3: '1', 9: '2'
+    };
+
+    for (let boxNumber = 1; boxNumber <= totalBoxes; boxNumber++) {
+        let row = Math.ceil(boxNumber / 6) + 1;
+        let col = ((boxNumber - 1) % 6) + 1;
+
+        if (textReplacements.hasOwnProperty(boxNumber)) {
+            const box = document.createElement('div');
+            box.className = 'grid-box';
+            box.dataset.boxNumber = boxNumber;
+            box.textContent = textReplacements[boxNumber];
+            box.style.gridRow = row;
+            box.style.gridColumn = col;
+            grid.appendChild(box);
+        }
+    }
+
+    initClientSponsors();
+}
+
+const DEFAULT_CLIENT_SPONSORS = [
+    { title: 'Shell Helix Ultra', url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80' },
+    { title: 'Pirelli P Zero', url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=800&q=80' },
+    { title: 'Red Bull Racing', url: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80' }
+];
+let clientSponsorIdx = 0;
+
+function initClientSponsors() {
+    const wrapper = document.getElementById('client-screen-media-wrapper');
+    const titleEl = document.getElementById('client-sponsor-title');
+    if (!wrapper) return;
+
+    function renderSlide() {
+        const cur = DEFAULT_CLIENT_SPONSORS[clientSponsorIdx];
+        if (titleEl) titleEl.textContent = cur.title;
+        wrapper.innerHTML = `<img src="${cur.url}" class="screen-media-item" alt="${cur.title}">`;
+        clientSponsorIdx = (clientSponsorIdx + 1) % DEFAULT_CLIENT_SPONSORS.length;
+    }
+
+    renderSlide();
+    setInterval(renderSlide, 6000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initClientTrack, 300);
+});
