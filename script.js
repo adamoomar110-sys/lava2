@@ -473,22 +473,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.deleteReview = async function(id) {
-        if (!window.supabaseClient) return;
+        const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+        if (!client) {
+            alert("Error: No se pudo conectar a Supabase.");
+            return;
+        }
+
         if (!confirm('¿Estás seguro que deseas borrar esta reseña?')) return;
         
         try {
-            const { error } = await window.supabaseClient
+            const { error } = await client
                 .from('reservas_pendientes')
                 .update({ rating: null, comentario: null })
                 .eq('id', id);
                 
-            if (error) throw error;
+            if (error) {
+                console.error("Error borrando reseña:", error);
+                alert("Error al borrar la reseña: " + (error.message || JSON.stringify(error)));
+                return;
+            }
             
-            // Refrescar lista
-            if (window.fetchClientReviews) window.fetchClientReviews();
+            // Refrescar lista de reseñas
+            if (window.fetchClientReviews) {
+                await window.fetchClientReviews();
+            }
         } catch (e) {
-            console.error("Error borrando reseña:", e);
-            alert("Hubo un error al borrar la reseña.");
+            console.error("Excepción borrando reseña:", e);
+            alert("Hubo un error al borrar la reseña: " + (e.message || e));
         }
     };
 
